@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>家族コンパス</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:     #ece8e0;
+      --card:   #e4e0d8;
+      --text:   #242220;
+      --sub:    #706c66;
+      --muted:  #9e9a94;
+      --rule:   #d4d0c8;
+      --border: #c8c4bc;
+      --lime:   #3a8c1a;
+      --alert:  #c42020;
+      --num:    'Inter', Helvetica, Arial, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 400;
+      min-height: 100vh;
+    }
+
+    /* nav */
+    .nav {
+      background: var(--bg);
+      border-bottom: 1px solid var(--rule);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo-small {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .nav-logo-line {
+      display: block; width: 28px; height: 1px; background: var(--muted);
+    }
+    .nav-logo-text {
+      font-family: var(--num); font-size: 10px; font-weight: 500;
+      letter-spacing: 0.32em; text-transform: uppercase; color: var(--sub);
+    }
+    .nav-date {
+      font-family: var(--num);
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    /* tabs */
+    .tabs {
+      display: flex;
+      background: var(--bg);
+      border-bottom: 1px solid var(--rule);
+      overflow-x: auto;
+    }
+    .tab {
+      flex: 1;
+      min-width: 80px;
+      padding: 14px 8px;
+      text-align: center;
+      font-family: var(--num);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      white-space: nowrap;
+      transition: color 0.15s;
+    }
+    .tab.active { color: var(--text); border-bottom-color: var(--text); }
+
+    /* screens */
+    .screen { display: none; max-width: 480px; margin: 0 auto; }
+    .screen.active { display: block; }
+
+    /* block */
+    .block {
+      padding: 36px 24px;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    /* dark floating card */
+    .block-dark {
+      background: #111;
+      border-bottom: none;
+      border-radius: 2px;
+      margin: 0 0 1px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+    }
+    .block-dark .blk-label { color: #888; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 20px; }
+    .block-dark .tl-body { font-weight: 300; font-size: 18px; color: #e8e8e8; }
+    .block-dark .ptag { color: #555; }
+    .block-dark .tl-time { color: #aaa; font-weight: 300; font-size: 28px; }
+    .block-dark .tl-item { border-bottom-color: #222; padding: 18px 0; }
+    .block-dark .tl-badge { border-color: #333; color: #666; }
+    .block-dark #timeline-eta { color: #555; }
+    .block-dark #timeline-eta-text { color: #555 !important; }
+
+    /* block label — "Previous events" style */
+    .blk-label {
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 22px;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
+
+    /* density pill */
+    .density-pill-wrap {
+      background: var(--border);
+      border-radius: 99px;
+      height: 44px;
+      overflow: hidden;
+      margin: 18px 0 12px;
+      position: relative;
+    }
+    .density-pill-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--text);
+      transition: width 0.6s ease;
+    }
+    .density-pill-labels {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 18px; pointer-events: none;
+    }
+    .density-pill-labels span {
+      font-family: var(--num); font-size: 15px;
+      font-weight: 600; letter-spacing: 0.06em; color: var(--bg);
+    }
+
+    /* timeline */
+    .timeline { list-style: none; }
+    .tl-item {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--rule);
+      align-items: start;
+      gap: 16px;
+    }
+    .tl-item:last-child { border-bottom: none; }
+    .tl-time {
+      font-family: var(--num); font-size: 28px;
+      font-weight: 300; color: #aaa; letter-spacing: -0.5px;
+      line-height: 1.2; text-align: left;
+    }
+    .tl-body { font-size: 18px; font-weight: 300; line-height: 1.4; color: #e8e8e8; }
+    .ptag {
+      font-family: var(--num); font-size: 11px; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); display: block; margin-bottom: 3px;
+    }
+    .tl-badge {
+      font-family: var(--num); font-size: 13px; letter-spacing: 0.04em;
+      color: var(--muted); border: 1px solid var(--border);
+      padding: 2px 7px; margin-left: 6px; vertical-align: middle;
+    }
+
+    /* status */
+    .status-row { display: flex; align-items: center; justify-content: space-between; }
+    .status-label {
+      font-family: var(--num); font-size: 26px; font-weight: 600;
+      letter-spacing: 0.02em; display: flex; align-items: center; gap: 10px;
+      color: var(--text);
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border); border: 1px solid var(--muted);
+    }
+    .status-dot.live { background: var(--text); border-color: var(--text); animation: pulse 1.4s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .status-time { font-family: var(--num); font-size: 16px; color: var(--muted); }
+
+    /* ETA */
+    .eta-block {
+      padding: 40px 24px;
+      border-bottom: 1px solid var(--rule);
+      text-align: left;
+      background: var(--bg);
+    }
+    .eta-eyebrow {
+      font-family: var(--num); font-size: 11px; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 14px;
+    }
+    .eta-number {
+      font-family: var(--num); font-size: 80px; font-weight: 900;
+      line-height: 1; letter-spacing: -4px; color: var(--border);
+    }
+    .eta-number.active { color: var(--text); }
+    .eta-caption {
+      font-family: var(--num); font-size: 14px;
+      letter-spacing: 0.04em; color: var(--muted); margin-top: 12px;
+    }
+
+    /* flash */
+    @keyframes flash-alert {
+      0%   { background: var(--bg); }
+      8%   { background: var(--alert); }
+      45%  { background: var(--alert); }
+      100% { background: var(--bg); }
+    }
+    .flash { animation: flash-alert 2.8s ease forwards; }
+
+    @keyframes flash-lime {
+      0%   { color: var(--border); }
+      8%   { color: var(--alert); }
+      45%  { color: var(--alert); }
+      100% { color: var(--text); }
+    }
+    .flash-num { animation: flash-lime 2.8s ease forwards; }
+
+    /* schedule list */
+    .sched-list { list-style: none; }
+    .sched-item {
+      display: grid; grid-template-columns: 1fr auto; gap: 16px;
+      padding: 18px 0; border-bottom: 1px solid var(--rule); align-items: center;
+    }
+    .sched-item:last-child { border-bottom: none; }
+    .sched-name { font-size: 22px; font-weight: 500; color: var(--text); line-height: 1.3; }
+    .sched-detail { font-size: 14px; color: var(--muted); margin-top: 6px; letter-spacing: 0.01em; }
+    .sched-right { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; }
+    .sched-time-row { display: flex; align-items: center; gap: 24px; }
+    .sched-time {
+      font-family: var(--num); font-size: 48px; font-weight: 800;
+      letter-spacing: -2px; color: var(--text); line-height: 1;
+    }
+    .sched-label {
+      font-family: var(--num); font-size: 11px; letter-spacing: 0.14em;
+      color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 14px;
+    }
+    .badge {
+      font-family: var(--num); font-size: 14px; letter-spacing: 0.08em;
+      padding: 3px 8px; display: inline-block; margin-top: 4px; margin-left: 10px;
+    }
+    .badge.done    { background: var(--text); color: var(--bg); }
+    .badge.pending { border: 1px solid var(--border); color: var(--muted); }
+    .badge.urgent  { background: var(--alert); color: #fff; }
+
+    /* notify */
+    .notify-list { list-style: none; }
+    .notify-item {
+      display: grid; grid-template-columns: 72px 1fr;
+      padding: 18px 0; border-bottom: 1px solid var(--rule);
+    }
+    .notify-item:last-child { border-bottom: none; }
+    .notify-who {
+      font-family: var(--num); font-size: 11px; font-weight: 600;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--muted); padding-top: 4px;
+    }
+    .notify-msg { font-size: 20px; font-weight: 400; line-height: 1.5; color: var(--text); }
+
+    /* checklist */
+    .check-list { list-style: none; }
+    .check-item {
+      display: grid; grid-template-columns: 22px 1fr auto; gap: 14px;
+      padding: 18px 0; border-bottom: 1px solid var(--rule); align-items: center;
+    }
+    .check-item:last-child { border-bottom: none; }
+    .check-box {
+      width: 26px; height: 26px;
+      border: 1.5px solid var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; margin-top: 4px;
+      font-family: var(--num); font-size: 14px; font-weight: 700;
+      color: #000;
+    }
+    .check-box.checked { background: var(--text); border-color: var(--text); }
+    .check-title { font-size: 20px; font-weight: 400; color: var(--text); line-height: 1.4; }
+    .check-title.done { text-decoration: line-through; color: var(--muted); }
+    .check-who {
+      font-family: var(--num); font-size: 11px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); margin-top: 5px;
+    }
+    .check-due {
+      font-family: var(--num); font-size: 13px;
+      font-weight: 600; letter-spacing: 0.1em; color: var(--muted);
+      text-transform: uppercase; white-space: nowrap;
+    }
+    .check-due.urgent { color: var(--alert); }
+
+    /* buttons */
+    .btn {
+      width: 100%; padding: 18px 20px;
+      border: 1px solid var(--text);
+      font-size: 16px; font-family: var(--num); font-weight: 500;
+      letter-spacing: 0.04em; text-transform: none;
+      cursor: pointer; margin-top: 20px;
+      background: transparent; color: var(--text);
+      display: flex; align-items: center; justify-content: space-between;
+      transition: opacity 0.15s;
+    }
+    .btn::after { content: '→'; font-size: 18px; font-weight: 400; }
+    .btn.filled { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .btn:disabled { opacity: 0.3; cursor: default; }
+    .btn:not(:disabled):hover { opacity: 0.6; }
+
+    /* departure */
+    .departure-wrap {
+      padding: 56px 24px 40px;
+      border-bottom: 1px solid var(--rule); text-align: center;
+    }
+    .departure-btn {
+      width: 160px; height: 160px; border-radius: 50%;
+      border: 2px solid var(--text);
+      background: var(--text); color: var(--bg);
+      font-family: var(--num); font-size: 21px; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.2s;
+      display: inline-flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 6px;
+    }
+    .departure-btn:active { transform: scale(0.97); }
+    .departure-btn:hover { opacity: 0.7; }
+    .departure-btn.pressed {
+      background: var(--text); color: var(--bg); border-color: var(--text);
+    }
+    .departure-btn .btn-sub {
+      font-size: 14px; font-weight: 400; letter-spacing: 0.04em;
+      text-transform: none; color: var(--muted);
+    }
+    .departure-btn.pressed .btn-sub { color: rgba(255,255,255,0.5); }
+    .departure-status {
+      margin-top: 14px; font-family: var(--num); font-size: 16px;
+      letter-spacing: 0.06em; color: var(--muted); min-height: 20px;
+    }
+
+    /* voice */
+    .voice-wrap { padding: 36px 24px; border-bottom: 1px solid var(--rule); text-align: center; }
+    .wave-row { display: flex; justify-content: center; align-items: flex-end; gap: 5px; height: 28px; margin-bottom: 12px; }
+    .wave-bar {
+      display: inline-block; width: 3px; border-radius: 1px; background: var(--text);
+      animation: wave 0.85s ease-in-out infinite alternate;
+    }
+    @keyframes wave { 0%{height:4px;opacity:0.15} 100%{height:26px;opacity:0.8} }
+    .wave-bar.muted { animation: none; height: 4px; background: var(--border); }
+    .voice-state {
+      font-family: var(--num); font-size: 13px; font-weight: 700;
+      letter-spacing: 0.2em; text-transform: uppercase; color: var(--text); margin-bottom: 6px;
+    }
+    .voice-sub { font-family: var(--num); font-size: 15px; color: var(--muted); letter-spacing: 0.05em; min-height: 18px; }
+    .voice-toggle {
+      margin-top: 12px; background: none; border: 1px solid var(--border);
+      padding: 7px 16px; font-family: var(--num); font-size: 12px;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--sub); cursor: pointer;
+      transition: all 0.15s;
+    }
+    .voice-toggle:hover { border-color: var(--sub); }
+
+    .resolved-bar {
+      padding: 12px 16px; background: var(--text); color: var(--bg);
+      font-family: var(--num); font-size: 13px; letter-spacing: 0.1em;
+      text-transform: uppercase; display: none; margin-top: 14px;
+      font-weight: 700;
+    }
+
+    /* logo hero */
+    .logo-block {
+      background: #000;
+      padding: 48px 24px 40px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-main {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 56px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.05;
+      color: var(--text);
+    }
+    .logo-sub {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .logo-sub-line {
+      display: block;
+      width: 36px;
+      height: 1px;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .logo-sub-text {
+      font-family: var(--num);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .spacer { height: 80px; }
+
+    /* chat */
+    .chat-wrap { background: #272320; min-height: calc(100vh - 110px); display: flex; flex-direction: column; }
+    .chat-who-bar { background: #272320; padding: 16px 16px 12px; display: flex; gap: 8px; overflow-x: auto; position: sticky; top: 110px; z-index: 10; border-bottom: 1px solid #333; }
+    .chat-who-btn { background: none; border: 1px solid #444; padding: 7px 16px; font-family: var(--num); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #888; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; border-radius: 1px; }
+    .chat-who-btn.active { background: #ece8e0; color: #242220; border-color: #ece8e0; }
+    .chat-messages { flex: 1; padding: 24px 16px 110px; display: flex; flex-direction: column; gap: 18px; }
+    .chat-msg { display: flex; flex-direction: column; max-width: 82%; }
+    .chat-msg.mine { align-self: flex-end; align-items: flex-end; }
+    .chat-msg.theirs { align-self: flex-start; align-items: flex-start; }
+    .chat-sender-name { font-family: var(--num); font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; color: #666; margin-bottom: 5px; }
+    .chat-bubble { background: #ece8e0; color: #242220; padding: 14px 18px; font-size: 18px; line-height: 1.55; }
+    .chat-bubble.dark { background: #3a3733; color: #e8e4dc; }
+    .chat-t { font-family: var(--num); font-size: 11px; color: #555; margin-top: 5px; }
+    .chat-input-bar { position: fixed; bottom: 0; left: 0; right: 0; max-width: 480px; margin: 0 auto; background: #ece8e0; padding: 12px 16px; display: flex; gap: 12px; align-items: center; border-top: 1px solid #d4d0c8; z-index: 50; }
+    .chat-input { flex: 1; background: transparent; border: none; border-bottom: 1px solid #c8c4bc; padding: 8px 0; font-size: 18px; font-family: 'Noto Sans JP', sans-serif; color: #242220; outline: none; }
+    .chat-input::placeholder { color: #b0aca4; }
+    .chat-send { background: #242220; color: #ece8e0; border: none; padding: 11px 20px; font-family: var(--num); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; flex-shrink: 0; }
+
+    /* settings */
+    .settings-overlay {
+      position: fixed; inset: 0; background: rgba(36,34,32,0.55);
+      z-index: 200; display: none; flex-direction: column; justify-content: flex-end;
+    }
+    .settings-overlay.open { display: flex; }
+    .settings-sheet {
+      background: var(--bg); padding: 32px 24px 52px;
+      width: 100%; max-width: 480px; margin: 0 auto;
+      border-top: 1px solid var(--rule);
+    }
+    .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+    .settings-title { font-size: 22px; font-weight: 400; color: var(--text); }
+    .settings-close { background: none; border: none; font-size: 22px; color: var(--muted); cursor: pointer; line-height: 1; padding: 4px; }
+    .settings-field { margin-bottom: 22px; }
+    .settings-field label { display: block; font-family: var(--num); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .settings-input { width: 100%; border: none; border-bottom: 1px solid var(--border); background: transparent; padding: 10px 0; font-size: 22px; font-family: 'Noto Sans JP', sans-serif; color: var(--text); outline: none; }
+    .settings-input:focus { border-bottom-color: var(--text); }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo-small">
+    <span class="nav-logo-line"></span>
+    <span class="nav-logo-text">Family Compass</span>
+    <span class="nav-logo-line"></span>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="nav-date" id="nav-date">--</div>
+    <button onclick="openSettings()" style="background:none;border:none;cursor:pointer;font-family:var(--num);font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);padding:4px 0;">Edit</button>
+  </div>
+</nav>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('home',this)">Dashboard</div>
+  <div class="tab" id="tab-husband" onclick="switchTab('husband',this)">Chanmi</div>
+  <div class="tab" id="tab-wife" onclick="switchTab('wife',this)">Flotan</div>
+  <div class="tab" id="tab-kids" onclick="switchTab('kids',this)">Kids</div>
+  <div class="tab" onclick="switchTab('chat',this)">Chat</div>
+</div>
+
+<!-- Chat画面 -->
+<div id="screen-chat" class="screen">
+  <div class="chat-wrap">
+    <div class="chat-who-bar" id="chat-who-bar"></div>
+    <div class="chat-messages" id="chat-messages"></div>
+  </div>
+  <div class="chat-input-bar">
+    <input class="chat-input" id="chat-input" type="text" placeholder="メッセージを入力…" onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" onclick="sendChat()">送信</button>
+  </div>
+</div>
+
+<!-- Kids画面 -->
+<div id="screen-kids" class="screen">
+
+  <div class="block">
+    <div class="blk-label"><span data-person="kid1">Korotan</span></div>
+    <div style="text-align:center; padding: 16px 0 8px;">
+      <button class="departure-btn" id="pickup-btn-kid1" onclick="requestPickup('kid1')" style="width:180px;height:180px;font-size:22px;letter-spacing:0.06em;">
+        迎えに来て！
+      </button>
+    </div>
+    <div id="pickup-status-kid1" style="margin-top:20px; font-family:var(--num); font-size:15px; color:var(--muted); text-align:center; min-height:20px; line-height:1.6;"></div>
+  </div>
+
+  <div class="block">
+    <div class="blk-label"><span data-person="kid2">Lori</span></div>
+    <div style="text-align:center; padding: 16px 0 8px;">
+      <button class="departure-btn" id="pickup-btn-kid2" onclick="requestPickup('kid2')" style="width:180px;height:180px;font-size:22px;letter-spacing:0.06em;">
+        迎えに来て！
+      </button>
+    </div>
+    <div id="pickup-status-kid2" style="margin-top:20px; font-family:var(--num); font-size:15px; color:var(--muted); text-align:center; min-height:20px; line-height:1.6;"></div>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<!-- ダッシュボード -->
+<div id="screen-home" class="screen active">
+
+  <div id="pickup-requests" style="display:none;">
+  </div>
+
+  <div class="block">
+    <div class="blk-label" id="blk-husband"><span data-person="husband">Chanmi</span></div>
+    <div class="status-row">
+      <div class="status-label">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="husband-status-text">連絡待ち</span>
+      </div>
+      <span class="status-time" id="husband-updated">--</span>
+    </div>
+    <div id="eta-mini" style="font-family:var(--num); font-size:16px; color:var(--muted); margin-top:14px; letter-spacing:0.04em;">
+      「出発」と言うと到着予測が表示されます
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="blk-label">今日の密度</div>
+    <div class="density-pill-wrap">
+      <div class="density-pill-fill" style="width:62%"></div>
+      <div class="density-pill-labels">
+        <span>余裕</span>
+        <span>やや忙しい — 62%</span>
+        <span>限界</span>
+      </div>
+    </div>
+    <div style="margin-top:14px; font-size:15px; color:var(--muted); letter-spacing:0.02em;">夕食は簡単メニューにすると余裕が生まれます</div>
+  </div>
+
+  <div class="block block-dark">
+    <div class="blk-label">Today's Timeline</div>
+    <ul class="timeline">
+      <li class="tl-item">
+        <span class="tl-time">8:00</span>
+        <span class="tl-body"><span class="ptag" data-person="kid1">Korotan</span>登校 <span class="tl-badge">体育着持参</span></span>
+      </li>
+      <li class="tl-item">
+        <span class="tl-time">8:15</span>
+        <span class="tl-body"><span class="ptag" data-person="kid2">Lori</span>登校</span>
+      </li>
+      <li class="tl-item">
+        <span class="tl-time">9:30</span>
+        <span class="tl-body"><span class="ptag" data-person="kid3">Peach</span>幼稚園体験</span>
+      </li>
+      <li class="tl-item">
+        <span class="tl-time">15:30</span>
+        <span class="tl-body"><span class="ptag" data-person="kid1">Korotan</span>下校 <span class="tl-badge">お迎え</span></span>
+      </li>
+      <li class="tl-item">
+        <span class="tl-time">16:00</span>
+        <span class="tl-body"><span class="ptag" data-person="kid2">Lori</span>ミニバス練習</span>
+      </li>
+      <li class="tl-item">
+        <span class="tl-time">18:30</span>
+        <span class="tl-body"><span class="ptag" data-person="kid2">Lori</span>ミニバスお迎え</span>
+      </li>
+      <li class="tl-item">
+        <span class="tl-time" id="timeline-eta" style="font-weight:500;">--:--</span>
+        <span class="tl-body" id="timeline-eta-text" style="color:var(--muted);"><span data-person="husband">Chanmi</span> 帰宅（未定）</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<!-- Chanmi画面 -->
+<div id="screen-husband" class="screen">
+
+  <div class="departure-wrap">
+    <button class="departure-btn" id="departure-btn" onclick="pressDeparture()">
+      <span id="btn-main-label">出発する</span>
+    </button>
+    <div class="departure-status" id="departure-status">未送信</div>
+  </div>
+
+  <div class="voice-wrap">
+    <div id="voice-start-screen">
+      <div style="font-family:var(--num); font-size:13px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); margin-bottom:14px;">音声モード</div>
+      <div style="font-size:26px; font-weight:600; color:var(--text); margin-bottom:10px; line-height:1.4;">
+        タップ1回でマイク常時オン
+      </div>
+      <div style="font-size:16px; color:var(--muted); margin-bottom:20px; line-height:1.6; font-family:var(--num);">
+        「出発」と言うだけで家族に通知されます
+      </div>
+      <button onclick="initVoice()" class="btn filled" style="width:auto; display:inline-block; padding:11px 26px; margin-top:0;">起動する</button>
+    </div>
+    <div id="voice-active-screen" style="display:none;">
+      <div class="wave-row">
+        <span class="wave-bar" style="animation-delay:0s"></span>
+        <span class="wave-bar" style="animation-delay:0.15s"></span>
+        <span class="wave-bar" style="animation-delay:0.3s"></span>
+        <span class="wave-bar" style="animation-delay:0.45s"></span>
+        <span class="wave-bar" style="animation-delay:0.6s"></span>
+      </div>
+      <div id="voice-label" class="voice-state">聞いています</div>
+      <div id="voice-status" class="voice-sub">「出発」と言うと送信されます</div>
+      <button onclick="toggleVoice()" id="voice-toggle-btn" class="voice-toggle">マイクをオフにする</button>
+    </div>
+  </div>
+
+  <div class="eta-block">
+    <div class="eta-eyebrow">Estimated Arrival</div>
+    <div class="eta-number" id="eta-display">--:--</div>
+    <div class="eta-caption" id="eta-sub">出発後に自動計算されます</div>
+  </div>
+
+  <div class="block">
+    <div class="blk-label">今日の家族予定</div>
+    <ul class="sched-list">
+      <li class="sched-item">
+        <div>
+          <div class="sched-name"><span data-person="kid1">Korotan</span> 塾</div>
+          <div class="sched-detail">徒歩20分</div>
+        </div>
+        <div class="sched-right">
+          <span class="sched-label">お迎え</span>
+          <span class="sched-time">21:45</span>
+        </div>
+      </li>
+      <li class="sched-item">
+        <div>
+          <div class="sched-name"><span data-person="kid2">Lori</span> ミニバス</div>
+          <div class="sched-detail">小学校体育館 / 徒歩5分</div>
+        </div>
+        <div class="sched-right">
+          <span class="sched-label">お迎え</span>
+          <span class="sched-time">18:30</span>
+        </div>
+      </li>
+      <li class="sched-item">
+        <div>
+          <div class="sched-name"><span data-person="kid3">Peach</span> 就寝</div>
+          <div class="sched-detail">この時間までに帰ると顔が見られます</div>
+        </div>
+        <div class="sched-right">
+          <span class="sched-label">目安</span>
+          <span class="sched-time">19:00</span>
+        </div>
+      </li>
+    </ul>
+    <button class="btn filled" onclick="offerPickup()"><span data-person="kid2">Lori</span>のお迎え、自分が行ける</button>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<!-- Flotan画面 -->
+<div id="screen-wife" class="screen">
+
+  <div id="wife-pickup-requests" style="display:none;"></div>
+
+  <div id="family-notify-group" style="display:none;">
+    <div class="block">
+      <div class="blk-label">通知済み</div>
+      <ul class="notify-list">
+        <li class="notify-item flash">
+          <div class="notify-who" data-person="wife">Flotan</div>
+          <div class="notify-msg" id="wife-notify-body">Chanmiが出発しました。-- 頃に到着予定です</div>
+        </li>
+        <li class="notify-item flash" style="animation-delay:0.25s">
+          <div class="notify-who" data-person="kid1">Korotan</div>
+          <div class="notify-msg" id="hikaru-notify-body">パパがもうすぐ帰ってくるよ！-- 頃の予定だよ</div>
+        </li>
+        <li class="notify-item flash" style="animation-delay:0.5s">
+          <div class="notify-who" data-person="kid2">Lori</div>
+          <div class="notify-msg" id="yuto-notify-body">パパがもうすぐ帰ってくるよ！-- 頃の予定だよ</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="eta-block">
+    <div class="eta-eyebrow" id="eta-eyebrow-wife"><span data-person="husband">Chanmi</span> — Estimated Arrival</div>
+    <div class="eta-number" id="wife-eta-display">--:--</div>
+    <div class="eta-caption" id="wife-eta-sub">出発後に表示されます</div>
+  </div>
+
+  <div class="block">
+    <div class="blk-label">今日のお迎え</div>
+    <ul class="sched-list">
+      <li class="sched-item">
+        <div>
+          <div class="sched-name"><span data-person="kid1">Korotan</span> 塾</div>
+          <div class="sched-detail">徒歩20分</div>
+        </div>
+        <div class="sched-right">
+          <span class="sched-label">お迎え</span>
+          <div class="sched-time-row">
+            <span class="sched-time">21:45</span>
+            <span class="badge pending">未</span>
+          </div>
+        </div>
+      </li>
+      <li class="sched-item">
+        <div>
+          <div class="sched-name"><span data-person="kid2">Lori</span> ミニバス</div>
+          <div class="sched-detail">小学校体育館 / 徒歩5分</div>
+        </div>
+        <div class="sched-right">
+          <span class="sched-label">お迎え</span>
+          <div class="sched-time-row">
+            <span class="sched-time">18:30</span>
+            <span class="badge pending" id="pickup-status-badge">未</span>
+          </div>
+        </div>
+      </li>
+    </ul>
+    <div class="resolved-bar" id="pickup-resolved"><span data-person="husband">Chanmi</span>が<span data-person="kid2">Lori</span>のお迎えを引き受けました</div>
+    <button class="btn filled" id="notify-child-btn" onclick="notifyChild()"><span data-person="kid2">Lori</span>に「もうすぐ行くよ」を送る</button>
+  </div>
+
+  <div class="block">
+    <div class="blk-label"><span data-person="kid3">Peach</span> — Today's Schedule</div>
+    <ul class="sched-list">
+      <li class="sched-item">
+        <div>
+          <div class="sched-name">幼稚園体験</div>
+          <div class="sched-detail">○○幼稚園 / 9:30〜11:30</div>
+        </div>
+        <div class="sched-right">
+          <span class="sched-label">開始</span>
+          <span class="sched-time">9:30</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <div class="blk-label">提出物 / 持ち物</div>
+    <ul class="check-list">
+      <li class="check-item">
+        <div class="check-box checked" id="check1" onclick="toggleCheck('check1','title1')">✓</div>
+        <div>
+          <div class="check-title done" id="title1">体育着（月曜持参）</div>
+          <div class="check-who" data-person="kid1">Korotan</div>
+        </div>
+        <span class="check-due">完了</span>
+      </li>
+      <li class="check-item">
+        <div class="check-box" id="check2" onclick="toggleCheck('check2','title2')"></div>
+        <div>
+          <div class="check-title" id="title2">理科の宿題プリント</div>
+          <div class="check-who" data-person="kid2">Lori</div>
+        </div>
+        <span class="check-due urgent">明日</span>
+      </li>
+      <li class="check-item">
+        <div class="check-box" id="check3" onclick="toggleCheck('check3','title3')"></div>
+        <div>
+          <div class="check-title" id="title3">給食費（現金）</div>
+          <div class="check-who" data-person="kid1">Korotan</div>
+        </div>
+        <span class="check-due urgent">今月</span>
+      </li>
+      <li class="check-item">
+        <div class="check-box checked" id="check4" onclick="toggleCheck('check4','title4')">✓</div>
+        <div>
+          <div class="check-title done" id="title4">ミニバス参加費（振込）</div>
+          <div class="check-who" data-person="kid2">Lori</div>
+        </div>
+        <span class="check-due">完了</span>
+      </li>
+      <li class="check-item">
+        <div class="check-box" id="check5" onclick="toggleCheck('check5','title5')"></div>
+        <div>
+          <div class="check-title" id="title5">日本脳炎ワクチン 1期（要予約）</div>
+          <div class="check-who" data-person="kid3">Peach</div>
+        </div>
+        <span class="check-due urgent">今月</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<script>
+  const d = new Date();
+  const days = ['日','月','火','水','木','金','土'];
+  document.getElementById('nav-date').textContent =
+    `${d.getMonth()+1}.${String(d.getDate()).padStart(2,'0')} ${days[d.getDay()]}`;
+
+  // --- Name management ---
+  const defaultNames = { husband: 'Chanmi', wife: 'Flotan', kid1: 'Korotan', kid2: 'Lori', kid3: 'Peach' };
+  let names = { ...defaultNames };
+
+  function loadNames() {
+    try { const s = localStorage.getItem('familyNames'); if (s) names = { ...defaultNames, ...JSON.parse(s) }; } catch(e) {}
+    applyNames();
+  }
+
+  function applyNames() {
+    document.querySelectorAll('[data-person]').forEach(el => {
+      const r = el.getAttribute('data-person');
+      if (names[r]) el.textContent = names[r];
+    });
+    document.getElementById('tab-husband').textContent = names.husband;
+    document.getElementById('tab-wife').textContent = names.wife;
+  }
+
+  function openSettings() {
+    document.getElementById('input-husband').value = names.husband;
+    document.getElementById('input-wife').value = names.wife;
+    document.getElementById('input-kid1').value = names.kid1;
+    document.getElementById('input-kid2').value = names.kid2;
+    document.getElementById('input-kid3').value = names.kid3;
+    document.getElementById('settings-overlay').classList.add('open');
+  }
+
+  function closeSettings() {
+    document.getElementById('settings-overlay').classList.remove('open');
+  }
+
+  function closeSettingsOutside(e) {
+    if (e.target === document.getElementById('settings-overlay')) closeSettings();
+  }
+
+  function saveNames() {
+    names.husband = document.getElementById('input-husband').value.trim() || defaultNames.husband;
+    names.wife    = document.getElementById('input-wife').value.trim()    || defaultNames.wife;
+    names.kid1    = document.getElementById('input-kid1').value.trim()    || defaultNames.kid1;
+    names.kid2    = document.getElementById('input-kid2').value.trim()    || defaultNames.kid2;
+    names.kid3    = document.getElementById('input-kid3').value.trim()    || defaultNames.kid3;
+    try { localStorage.setItem('familyNames', JSON.stringify(names)); } catch(e) {}
+    applyNames();
+    closeSettings();
+  }
+
+  loadNames();
+  initChat();
+  // --- End name management ---
+
+  function switchTab(name, el) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    el.classList.add('active');
+  }
+
+  let departed = false;
+  function pressDeparture() {
+    if (departed) return;
+    departed = true;
+    const now = new Date();
+    const eta = new Date(now.getTime() + 42 * 60000);
+    const etaStr = `${eta.getHours()}:${String(eta.getMinutes()).padStart(2,'0')}`;
+    const nowStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+    document.getElementById('departure-btn').classList.add('pressed');
+    document.getElementById('btn-main-label').textContent = '出発済み';
+    document.getElementById('departure-status').textContent = `${nowStr} — ${names.wife}・${names.kid1}・${names.kid2}へ通知`;
+
+    const etaNum = document.getElementById('eta-display');
+    etaNum.textContent = etaStr;
+    etaNum.classList.add('active', 'flash-num');
+    document.getElementById('eta-sub').textContent = '自宅まで約42分';
+
+    document.getElementById('status-dot').classList.add('live');
+    document.getElementById('husband-status-text').textContent = '帰宅中';
+    document.getElementById('husband-updated').textContent = 'たった今更新';
+    document.getElementById('eta-mini').textContent = `${etaStr} 頃に到着予定（約42分）`;
+    document.getElementById('timeline-eta').textContent = etaStr;
+    const etaText = document.getElementById('timeline-eta-text');
+    etaText.innerHTML = `<span data-person="husband">${names.husband}</span> 帰宅予定`;
+    etaText.style.color = 'var(--text)';
+    etaText.style.fontWeight = '700';
+
+    document.getElementById('wife-notify-body').textContent = `${names.husband}が出発しました。${etaStr} 頃に到着予定です`;
+    document.getElementById('hikaru-notify-body').textContent = `パパがもうすぐ帰ってくるよ！${etaStr} 頃の予定だよ`;
+    document.getElementById('yuto-notify-body').textContent = `パパがもうすぐ帰ってくるよ！${etaStr} 頃の予定だよ`;
+    document.getElementById('family-notify-group').style.display = 'block';
+
+    const wifeNum = document.getElementById('wife-eta-display');
+    wifeNum.textContent = etaStr;
+    wifeNum.classList.add('active', 'flash-num');
+    document.getElementById('wife-eta-sub').textContent = '現在地から自宅まで約42分';
+  }
+
+  function offerPickup() {
+    document.getElementById('pickup-resolved').style.display = 'block';
+    const badge = document.getElementById('pickup-status-badge');
+    badge.textContent = `${names.husband}対応`;
+    badge.className = 'badge done';
+    const nb = document.getElementById('notify-child-btn');
+    nb.textContent = `${names.husband}がお迎えします`;
+    nb.disabled = true;
+    alert(`${names.husband}から「${names.kid2}のお迎えに行くよ」の通知を送りました`);
+  }
+
+  function notifyChild() {
+    alert(`${names.kid2}に「もうすぐお迎えに行くよ」を送りました`);
+  }
+
+  // --- Chat ---
+  let chatSender = 'wife';
+  const chatLog = [];
+
+  function initChat() {
+    // sender selector buttons
+    const bar = document.getElementById('chat-who-bar');
+    ['wife','husband','kid1','kid2'].forEach((role, i) => {
+      const b = document.createElement('button');
+      b.className = 'chat-who-btn' + (i === 0 ? ' active' : '');
+      b.setAttribute('data-role', role);
+      b.textContent = names[role];
+      b.onclick = () => {
+        chatSender = role;
+        bar.querySelectorAll('.chat-who-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+      };
+      bar.appendChild(b);
+    });
+
+    // sample messages
+    const samples = [
+      { role: 'wife',    text: '帰りに牛乳買ってきてください🥛' },
+      { role: 'husband', text: '了解！他に何かある？' },
+      { role: 'kid1',    text: 'のどが渇いた、水持ってきて' },
+      { role: 'wife',    text: 'もうすぐ夕飯できるよ〜' },
+    ];
+    samples.forEach(m => appendChat(m.role, m.text, false));
+  }
+
+  function sendChat() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    appendChat(chatSender, text, true);
+    input.value = '';
+  }
+
+  function appendChat(role, text, scroll) {
+    const now = new Date();
+    const t = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const isMine = role === chatSender;
+    const el = document.createElement('div');
+    el.className = `chat-msg ${isMine ? 'mine' : 'theirs'}`;
+    el.innerHTML = `
+      <div class="chat-sender-name">${names[role]}</div>
+      <div class="chat-bubble ${isMine ? '' : 'dark'}">${text}</div>
+      <div class="chat-t">${t}</div>`;
+    document.getElementById('chat-messages').appendChild(el);
+    if (scroll) el.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // --- Pickup request ---
+  function requestPickup(role) {
+    const btn = document.getElementById(`pickup-btn-${role}`);
+    const statusEl = document.getElementById(`pickup-status-${role}`);
+    btn.textContent = '位置情報を取得中…';
+    btn.disabled = true;
+
+    if (!navigator.geolocation) {
+      btn.textContent = '迎えに来て！';
+      btn.disabled = false;
+      statusEl.textContent = '位置情報に対応していません';
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude.toFixed(5);
+        const lng = pos.coords.longitude.toFixed(5);
+        const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+        btn.textContent = '送信済み ✓';
+        statusEl.innerHTML = `現在地を送信しました`;
+        showPickupRequest(role, lat, lng, mapsUrl);
+      },
+      () => {
+        // 位置情報拒否時もデモとして動作
+        btn.textContent = '送信済み ✓';
+        statusEl.textContent = '現在地を送信しました（デモ）';
+        showPickupRequest(role, '35.68143', '139.76711', 'https://maps.google.com/?q=35.68143,139.76711');
+      },
+      { timeout: 8000 }
+    );
+  }
+
+  function showPickupRequest(role, lat, lng, mapsUrl) {
+    const kidName = names[role];
+    const cardId = `pickup-card-${role}`;
+
+    const cardHTML = `
+      <div class="block" id="${cardId}" style="border-left:3px solid var(--text);">
+        <div style="font-family:var(--num);font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--alert);margin-bottom:12px;">お迎えリクエスト</div>
+        <div style="font-size:26px;font-weight:600;color:var(--text);margin-bottom:8px;">${kidName}</div>
+        <a href="${mapsUrl}" target="_blank" style="font-family:var(--num);font-size:15px;color:var(--sub);text-decoration:none;display:block;margin-bottom:4px;">
+          現在地を地図で見る →
+        </a>
+        <div style="font-family:var(--num);font-size:13px;color:var(--muted);margin-bottom:20px;">${lat}, ${lng}</div>
+        <div id="eta-card-${role}" style="font-family:var(--num);font-size:14px;color:var(--muted);margin-bottom:16px;"></div>
+        <button class="btn filled" onclick="headingToKid('${role}','${mapsUrl}')">向かいます →</button>
+      </div>`;
+
+    // Dashboard
+    const reqArea = document.getElementById('pickup-requests');
+    const existing = document.getElementById(cardId);
+    if (existing) existing.remove();
+    reqArea.style.display = 'block';
+    reqArea.insertAdjacentHTML('beforeend', cardHTML);
+
+    // Flotan screen — duplicate card
+    const wifeDup = document.getElementById(`pickup-card-wife-${role}`);
+    if (wifeDup) wifeDup.remove();
+    const wifeInsert = document.getElementById('wife-pickup-requests');
+    if (wifeInsert) {
+      wifeInsert.style.display = 'block';
+      const wifeCard = cardHTML.replace(`id="${cardId}"`, `id="pickup-card-wife-${role}"`).replace(`id="eta-card-${role}"`, `id="eta-card-wife-${role}"`).replace(`onclick="headingToKid('${role}','${mapsUrl}')"`, `onclick="headingToKid('${role}','${mapsUrl}')" id="head-btn-wife-${role}"`);
+      wifeInsert.insertAdjacentHTML('beforeend', wifeCard);
+    }
+  }
+
+  function headingToKid(role, mapsUrl) {
+    const eta = Math.floor(Math.random() * 10) + 12; // 12〜21分
+    const now = new Date();
+    const arr = new Date(now.getTime() + eta * 60000);
+    const arrStr = `${arr.getHours()}:${String(arr.getMinutes()).padStart(2,'0')}`;
+
+    [`eta-card-${role}`, `eta-card-wife-${role}`].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<span style="font-size:40px;font-weight:800;letter-spacing:-2px;color:var(--text);">${arrStr}</span><span style="display:block;margin-top:4px;">約${eta}分後に到着予定</span>`;
+    });
+
+    // disable heading buttons
+    document.querySelectorAll(`[id^="head-btn"]`).forEach(b => { b.textContent = `向かっています（${arrStr}着予定）`; b.disabled = true; });
+
+    window.open(mapsUrl, '_blank');
+    alert(`${names[role]}に「約${eta}分後に到着予定」を送りました`);
+  }
+
+  let recognition = null, voiceActive = false, voiceInitialized = false;
+
+  function setWaveMuted(m) {
+    document.querySelectorAll('.wave-bar').forEach(b => b.classList.toggle('muted', m));
+  }
+
+  function initVoice() {
+    document.getElementById('voice-start-screen').style.display = 'none';
+    document.getElementById('voice-active-screen').style.display = 'block';
+    voiceInitialized = true;
+    startVoice();
+  }
+
+  function startVoice() {
+    if (!voiceInitialized) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      document.getElementById('voice-label').textContent = '音声非対応ブラウザ';
+      setWaveMuted(true); return;
+    }
+    if (recognition) { try { recognition.stop(); } catch(e) {} }
+    recognition = new SR();
+    recognition.lang = 'ja-JP';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.onstart = () => {
+      voiceActive = true; setWaveMuted(false);
+      document.getElementById('voice-label').textContent = '聞いています';
+      document.getElementById('voice-toggle-btn').textContent = 'マイクをオフにする';
+    };
+    recognition.onresult = (e) => {
+      let t = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
+      document.getElementById('voice-status').textContent = `「${t}」`;
+      if (t.includes('出発') || t.includes('しゅっぱつ')) {
+        voiceActive = false; if (recognition) recognition.stop();
+        pressDeparture();
+      }
+    };
+    recognition.onerror = (e) => {
+      if (e.error === 'not-allowed') {
+        document.getElementById('voice-label').textContent = 'マイクの許可が必要です';
+        setWaveMuted(true); voiceActive = false;
+      }
+    };
+    recognition.onend = () => { if (voiceActive) setTimeout(() => startVoice(), 300); };
+    try { recognition.start(); } catch(e) { setTimeout(() => startVoice(), 500); }
+  }
+
+  function stopVoice() {
+    voiceActive = false;
+    if (recognition) { try { recognition.stop(); } catch(e) {} }
+    setWaveMuted(true);
+    document.getElementById('voice-label').textContent = 'マイクがオフ';
+    document.getElementById('voice-status').textContent = '';
+    document.getElementById('voice-toggle-btn').textContent = 'マイクをオンにする';
+  }
+
+  function toggleVoice() {
+    if (departed) return;
+    if (voiceActive) { stopVoice(); } else { voiceActive = true; startVoice(); }
+  }
+
+  function toggleCheck(boxId, titleId) {
+    const box = document.getElementById(boxId);
+    const title = document.getElementById(titleId);
+    if (box.classList.contains('checked')) {
+      box.classList.remove('checked'); box.textContent = ''; title.classList.remove('done');
+    } else {
+      box.classList.add('checked'); box.textContent = '✓'; title.classList.add('done');
+    }
+  }
+</script>
+
+<div class="settings-overlay" id="settings-overlay" onclick="closeSettingsOutside(event)">
+  <div class="settings-sheet">
+    <div class="settings-header">
+      <div class="settings-title">Family Names</div>
+      <button class="settings-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-field">
+      <label>パパ / Dad</label>
+      <input class="settings-input" id="input-husband" type="text">
+    </div>
+    <div class="settings-field">
+      <label>ママ / Mom</label>
+      <input class="settings-input" id="input-wife" type="text">
+    </div>
+    <div class="settings-field">
+      <label>子ども 1</label>
+      <input class="settings-input" id="input-kid1" type="text">
+    </div>
+    <div class="settings-field">
+      <label>子ども 2</label>
+      <input class="settings-input" id="input-kid2" type="text">
+    </div>
+    <div class="settings-field">
+      <label>末っ子</label>
+      <input class="settings-input" id="input-kid3" type="text">
+    </div>
+    <button class="btn filled" onclick="saveNames()">保存する</button>
+  </div>
+</div>
+</body>
+</html>
