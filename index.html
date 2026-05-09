@@ -1,1124 +1,1158 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FLOTAN | 3D Designer × AI Explorer</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;700;800;900&family=Inter:wght@300;400&display=swap" rel="stylesheet">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>家族コンパス</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=Noto+Sans+JP:wght@300;400;500;700&family=Playfair+Display:wght@700;900&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        :root {
-            --purple:  #9333ea;
-            --pink:    #f472b6;
-            --mint:    #34d399;
-            --yellow:  #fbbf24;
-            --blue:    #60a5fa;
-            --bg:      #0d0820;
-            --card:    rgba(147,51,234,0.08);
-            --muted:   #b8a8d0;
-            --grid:    rgba(147,51,234,0.08);
-            /* legacy aliases for canvas */
-            --green:   #34d399;
-            --cyan:    #60a5fa;
-            --magenta: #f472b6;
-        }
+    :root {
+      --bg:     #ece8e0;
+      --card:   #e4e0d8;
+      --text:   #242220;
+      --sub:    #706c66;
+      --muted:  #9e9a94;
+      --rule:   #d4d0c8;
+      --border: #c8c4bc;
+      --lime:   #3a8c1a;
+      --alert:  #c42020;
+      --num:    'Inter', Helvetica, Arial, sans-serif;
+    }
 
-        html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Noto Sans JP', sans-serif;
+      font-weight: 400;
+      min-height: 100vh;
+    }
 
-        body {
-            background: var(--bg);
-            color: #fff;
-            font-family: 'Poppins', sans-serif;
-            font-weight: 300;
-            overflow-x: hidden;
-        }
+    /* nav */
+    .nav {
+      background: var(--bg);
+      border-bottom: 1px solid var(--rule);
+      padding: 0 24px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo-small {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .nav-logo-line {
+      display: block; width: 28px; height: 1px; background: var(--muted);
+    }
+    .nav-logo-text {
+      font-family: var(--num); font-size: 10px; font-weight: 500;
+      letter-spacing: 0.32em; text-transform: uppercase; color: var(--sub);
+    }
+    .nav-date {
+      font-family: var(--num);
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
 
-        /* ── fixed bg layers ── */
-        .bg-grid {
-            position: fixed; inset: 0; z-index: 0; pointer-events: none;
-            background-image:
-                linear-gradient(var(--grid) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-            background-size: 60px 60px;
-            will-change: transform;
-        }
+    /* tabs */
+    .tabs {
+      display: flex;
+      background: var(--bg);
+      border-bottom: 1px solid var(--rule);
+      overflow-x: auto;
+    }
+    .tab {
+      flex: 1;
+      min-width: 80px;
+      padding: 14px 8px;
+      text-align: center;
+      font-family: var(--num);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      white-space: nowrap;
+      transition: color 0.15s;
+    }
+    .tab.active { color: var(--text); border-bottom-color: var(--text); }
 
-        #bg-canvas {
-            position: fixed; inset: 0; z-index: 0;
-            opacity: .4; pointer-events: none;
-        }
+    /* screens */
+    .screen { display: none; max-width: 480px; margin: 0 auto; }
+    .screen.active { display: block; }
 
-        /* ── nav ── */
-        nav {
-            position: fixed; top: 0; width: 100%; z-index: 200;
-            padding: .9rem 2rem;
-            background: rgba(13,8,32,.88);
-            backdrop-filter: blur(14px);
-            border-bottom: 1px solid rgba(147,51,234,.25);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .nav-logo {
-            font-family: 'Poppins', sans-serif;
-            font-size: 1.5rem; font-weight: 800;
-            color: #fff; letter-spacing: .1em;
-        }
-        .nav-logo span { color: var(--yellow); }
+    /* block */
+    .block {
+      padding: 36px 24px;
+      border-bottom: 1px solid var(--rule);
+    }
 
-        .nav-links { display: flex; gap: 2rem; list-style: none; }
-        .nav-links a {
-            color: var(--muted); text-decoration: none;
-            font-size: .78rem; font-weight: 400; letter-spacing: .12em;
-            transition: color .3s;
-        }
-        .nav-links a:hover { color: var(--pink); }
+    /* dark floating card */
+    .block-dark {
+      background: #111;
+      border-bottom: none;
+      border-radius: 2px;
+      margin: 0 0 1px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+    }
+    .block-dark .blk-label { color: #888; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 20px; }
+    .block-dark .tl-body { font-weight: 300; font-size: 18px; color: #e8e8e8; }
+    .block-dark .ptag { color: #555; }
+    .block-dark .tl-time { color: #aaa; font-weight: 300; font-size: 28px; }
+    .block-dark .tl-item { border-bottom-color: #222; padding: 18px 0; }
+    .block-dark .tl-badge { border-color: #333; color: #666; }
+    .block-dark #timeline-eta { color: #555; }
+    .block-dark #timeline-eta-text { color: #555 !important; }
 
-        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
-        .hamburger span { width: 24px; height: 2px; background: var(--purple); transition: .3s; }
+    /* block label — "Previous events" style */
+    .blk-label {
+      font-family: 'Noto Sans JP', sans-serif;
+      font-size: 22px;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--text);
+      margin-bottom: 28px;
+    }
 
-        .nav-menu { display: flex; }
+    /* density pill */
+    .density-pill-wrap {
+      background: var(--border);
+      border-radius: 99px;
+      height: 44px;
+      overflow: hidden;
+      margin: 18px 0 12px;
+      position: relative;
+    }
+    .density-pill-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--text);
+      transition: width 0.6s ease;
+    }
+    .density-pill-labels {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 18px; pointer-events: none;
+    }
+    .density-pill-labels span {
+      font-family: var(--num); font-size: 15px;
+      font-weight: 600; letter-spacing: 0.06em; color: var(--bg);
+    }
 
-        /* ── sections ── */
-        section {
-            position: relative; z-index: 1;
-            min-height: 100vh;
-            display: flex; align-items: center; justify-content: center;
-            padding: 6rem 2rem 4rem;
-        }
-        #skills, #ai, #challenge { padding-top: 3rem; }
-        .container { max-width: 1100px; width: 100%; margin: 0 auto; }
+    /* timeline */
+    .timeline { list-style: none; }
+    .tl-item {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      padding: 22px 0;
+      border-bottom: 1px solid var(--rule);
+      align-items: start;
+      gap: 16px;
+    }
+    .tl-item:last-child { border-bottom: none; }
+    .tl-time {
+      font-family: var(--num); font-size: 28px;
+      font-weight: 300; color: #aaa; letter-spacing: -0.5px;
+      line-height: 1.2; text-align: left;
+    }
+    .tl-body { font-size: 18px; font-weight: 300; line-height: 1.4; color: #e8e8e8; }
+    .ptag {
+      font-family: var(--num); font-size: 11px; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); display: block; margin-bottom: 3px;
+    }
+    .tl-badge {
+      font-family: var(--num); font-size: 13px; letter-spacing: 0.04em;
+      color: var(--muted); border: 1px solid var(--border);
+      padding: 2px 7px; margin-left: 6px; vertical-align: middle;
+    }
 
-        /* ── hero ── */
-        #hero { flex-direction: column; text-align: center; }
+    /* status */
+    .status-row { display: flex; align-items: center; justify-content: space-between; }
+    .status-label {
+      font-family: var(--num); font-size: 26px; font-weight: 600;
+      letter-spacing: 0.02em; display: flex; align-items: center; gap: 10px;
+      color: var(--text);
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--border); border: 1px solid var(--muted);
+    }
+    .status-dot.live { background: var(--text); border-color: var(--text); animation: pulse 1.4s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    .status-time { font-family: var(--num); font-size: 16px; color: var(--muted); }
 
-        .avatar-wrapper {
-            position: relative; width: 220px; height: 220px;
-            margin: 0 auto 2rem;
-        }
-        /* 外側の回転リング */
-        .avatar-ring {
-            position: absolute; inset: -14px; border-radius: 50%;
-            border: 2px solid var(--green);
-            box-shadow: 0 0 20px var(--green);
-            animation: spin 5s linear infinite;
-        }
-        .avatar-ring::before {
-            content: ''; position: absolute;
-            top: -6px; left: 50%; transform: translateX(-50%);
-            width: 14px; height: 14px;
-            background: var(--yellow); border-radius: 50%;
-            box-shadow: 0 0 14px var(--yellow);
-        }
-        /* 2本目のリング（逆回転） */
-        .avatar-ring2 {
-            position: absolute; inset: -26px; border-radius: 50%;
-            border: 1px dashed rgba(0,255,255,.5);
-            animation: spin 10s linear infinite reverse;
-        }
-        .avatar-ring2::before {
-            content: ''; position: absolute;
-            bottom: -5px; left: 50%; transform: translateX(-50%);
-            width: 10px; height: 10px;
-            background: var(--magenta); border-radius: 50%;
-            box-shadow: 0 0 12px var(--magenta);
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
+    /* ETA */
+    .eta-block {
+      padding: 40px 24px;
+      border-bottom: 1px solid var(--rule);
+      text-align: left;
+      background: var(--bg);
+    }
+    .eta-eyebrow {
+      font-family: var(--num); font-size: 11px; font-weight: 500;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 14px;
+    }
+    .eta-number {
+      font-family: var(--num); font-size: 80px; font-weight: 900;
+      line-height: 1; letter-spacing: -4px; color: var(--border);
+    }
+    .eta-number.active { color: var(--text); }
+    .eta-caption {
+      font-family: var(--num); font-size: 14px;
+      letter-spacing: 0.04em; color: var(--muted); margin-top: 12px;
+    }
 
-        /* 実写アバター画像 */
-        .avatar-img {
-            width: 220px; height: 220px;
-            border-radius: 50%; overflow: hidden;
-            position: relative; z-index: 1;
-        }
-        .avatar-img img {
-            width: 100%; height: 100%;
-            object-fit: cover; object-position: center top;
-            border-radius: 50%;
-        }
+    /* flash */
+    @keyframes flash-alert {
+      0%   { background: var(--bg); }
+      8%   { background: var(--alert); }
+      45%  { background: var(--alert); }
+      100% { background: var(--bg); }
+    }
+    .flash { animation: flash-alert 2.8s ease forwards; }
 
-        /* ゴーグル発光オーバーレイ */
-        .goggles-glow {
-            position: absolute;
-            top: 28%; left: 18%;
-            width: 64%; height: 22%;
-            border-radius: 40%;
-            background: transparent;
-            box-shadow:
-                0 0 18px 6px rgba(0,255,255,.55),
-                0 0 40px 10px rgba(0,255,255,.25);
-            animation: goggle-pulse 2s ease-in-out infinite;
-            z-index: 2; pointer-events: none;
-        }
-        @keyframes goggle-pulse {
-            0%,100% {
-                box-shadow: 0 0 18px 6px rgba(0,255,255,.55),
-                            0 0 40px 10px rgba(0,255,255,.25);
-                opacity: .9;
-            }
-            50% {
-                box-shadow: 0 0 32px 14px rgba(0,255,255,.85),
-                            0 0 70px 20px rgba(0,255,255,.45),
-                            0 0 100px 30px rgba(255,0,255,.2);
-                opacity: 1;
-            }
-        }
+    @keyframes flash-lime {
+      0%   { color: var(--border); }
+      8%   { color: var(--alert); }
+      45%  { color: var(--alert); }
+      100% { color: var(--text); }
+    }
+    .flash-num { animation: flash-lime 2.8s ease forwards; }
 
-        /* 浮遊アニメーション */
-        .avatar-float {
-            animation: float 4s ease-in-out infinite;
-        }
-        @keyframes float {
-            0%,100% { transform: translateY(0); }
-            50%      { transform: translateY(-10px); }
-        }
+    /* schedule list */
+    .sched-list { list-style: none; }
+    .sched-item {
+      display: grid; grid-template-columns: 1fr auto; gap: 16px;
+      padding: 18px 0; border-bottom: 1px solid var(--rule); align-items: center;
+    }
+    .sched-item:last-child { border-bottom: none; }
+    .sched-name { font-size: 22px; font-weight: 500; color: var(--text); line-height: 1.3; }
+    .sched-detail { font-size: 14px; color: var(--muted); margin-top: 6px; letter-spacing: 0.01em; }
+    .sched-right { text-align: right; flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; }
+    .sched-time-row { display: flex; align-items: center; gap: 24px; }
+    .sched-time {
+      font-family: var(--num); font-size: 48px; font-weight: 800;
+      letter-spacing: -2px; color: var(--text); line-height: 1;
+    }
+    .sched-label {
+      font-family: var(--num); font-size: 11px; letter-spacing: 0.14em;
+      color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 14px;
+    }
+    .badge {
+      font-family: var(--num); font-size: 14px; letter-spacing: 0.08em;
+      padding: 3px 8px; display: inline-block; margin-top: 4px; margin-left: 10px;
+    }
+    .badge.done    { background: var(--text); color: var(--bg); }
+    .badge.pending { border: 1px solid var(--border); color: var(--muted); }
+    .badge.urgent  { background: var(--alert); color: #fff; }
 
-        /* スキャンライン */
-        .avatar-scan {
-            position: absolute; inset: 0; border-radius: 50%;
-            background: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 3px,
-                rgba(0,255,136,.04) 3px,
-                rgba(0,255,136,.04) 4px
-            );
-            animation: scan-move 3s linear infinite;
-            z-index: 3; pointer-events: none;
-            overflow: hidden; border-radius: 50%;
-        }
-        @keyframes scan-move {
-            0%   { background-position: 0 0; }
-            100% { background-position: 0 100px; }
-        }
+    /* notify */
+    .notify-list { list-style: none; }
+    .notify-item {
+      display: grid; grid-template-columns: 72px 1fr;
+      padding: 18px 0; border-bottom: 1px solid var(--rule);
+    }
+    .notify-item:last-child { border-bottom: none; }
+    .notify-who {
+      font-family: var(--num); font-size: 11px; font-weight: 600;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--muted); padding-top: 4px;
+    }
+    .notify-msg { font-size: 20px; font-weight: 400; line-height: 1.5; color: var(--text); }
 
-        .avatar-svg { width: 180px; height: 180px; border-radius: 50%; overflow: hidden; }
+    /* checklist */
+    .check-list { list-style: none; }
+    .check-item {
+      display: grid; grid-template-columns: 22px 1fr auto; gap: 14px;
+      padding: 18px 0; border-bottom: 1px solid var(--rule); align-items: center;
+    }
+    .check-item:last-child { border-bottom: none; }
+    .check-box {
+      width: 26px; height: 26px;
+      border: 1.5px solid var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; margin-top: 4px;
+      font-family: var(--num); font-size: 14px; font-weight: 700;
+      color: #000;
+    }
+    .check-box.checked { background: var(--text); border-color: var(--text); }
+    .check-title { font-size: 20px; font-weight: 400; color: var(--text); line-height: 1.4; }
+    .check-title.done { text-decoration: line-through; color: var(--muted); }
+    .check-who {
+      font-family: var(--num); font-size: 11px; letter-spacing: 0.14em;
+      text-transform: uppercase; color: var(--muted); margin-top: 5px;
+    }
+    .check-due {
+      font-family: var(--num); font-size: 13px;
+      font-weight: 600; letter-spacing: 0.1em; color: var(--muted);
+      text-transform: uppercase; white-space: nowrap;
+    }
+    .check-due.urgent { color: var(--alert); }
 
-        .hero-badge {
-            font-weight: 400;
-            display: inline-block;
-            color: var(--mint); border: 1px solid var(--mint);
-            padding: .3rem 1.4rem; font-size: .7rem; letter-spacing: .35em;
-            margin-bottom: 1.2rem; border-radius: 2rem;
-            animation: badge-glow 2s ease-in-out infinite;
-        }
-        @keyframes badge-glow {
-            0%,100% { box-shadow: 0 0 8px var(--mint); }
-            50%      { box-shadow: 0 0 28px var(--mint), 0 0 50px var(--mint); }
-        }
+    /* buttons */
+    .btn {
+      width: 100%; padding: 18px 20px;
+      border: 1px solid var(--text);
+      font-size: 16px; font-family: var(--num); font-weight: 500;
+      letter-spacing: 0.04em; text-transform: none;
+      cursor: pointer; margin-top: 20px;
+      background: transparent; color: var(--text);
+      display: flex; align-items: center; justify-content: space-between;
+      transition: opacity 0.15s;
+    }
+    .btn::after { content: '→'; font-size: 18px; font-weight: 400; }
+    .btn.filled { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .btn:disabled { opacity: 0.3; cursor: default; }
+    .btn:not(:disabled):hover { opacity: 0.6; }
 
-        .hero-name {
-            font-family: 'Poppins', sans-serif;
-            font-size: clamp(4.5rem,15vw,12rem);
-            font-weight: 900; letter-spacing: -.01em;
-            line-height: .9;
-            background: linear-gradient(135deg, #fff 0%, var(--pink) 50%, var(--purple) 100%);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text; margin-bottom: .8rem;
-        }
-        /* glitch */
-        .glitch { position: relative; display: inline-block; }
-        .glitch::before, .glitch::after {
-            content: attr(data-text);
-            position: absolute; top: 0; left: 0; width: 100%;
-            background: linear-gradient(135deg, var(--blue), var(--pink));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        .glitch::before {
-            clip-path: polygon(0 0,100% 0,100% 35%,0 35%);
-            animation: glitch1 5s infinite;
-        }
-        .glitch::after {
-            clip-path: polygon(0 65%,100% 65%,100% 100%,0 100%);
-            animation: glitch2 5s infinite;
-        }
-        @keyframes glitch1 {
-            0%,89%,100% { transform: translateX(0); }
-            90% { transform: translateX(-4px); }
-            92% { transform: translateX(4px); }
-            94% { transform: translateX(-2px); }
-        }
-        @keyframes glitch2 {
-            0%,89%,100% { transform: translateX(0); }
-            90% { transform: translateX(4px); }
-            92% { transform: translateX(-4px); }
-            94% { transform: translateX(2px); }
-        }
+    /* departure */
+    .departure-wrap {
+      padding: 56px 24px 40px;
+      border-bottom: 1px solid var(--rule); text-align: center;
+    }
+    .departure-btn {
+      width: 160px; height: 160px; border-radius: 50%;
+      border: 2px solid var(--text);
+      background: var(--text); color: var(--bg);
+      font-family: var(--num); font-size: 21px; font-weight: 700;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      cursor: pointer; transition: all 0.2s;
+      display: inline-flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 6px;
+    }
+    .departure-btn:active { transform: scale(0.97); }
+    .departure-btn:hover { opacity: 0.7; }
+    .departure-btn.pressed {
+      background: var(--text); color: var(--bg); border-color: var(--text);
+    }
+    .departure-btn .btn-sub {
+      font-size: 14px; font-weight: 400; letter-spacing: 0.04em;
+      text-transform: none; color: var(--muted);
+    }
+    .departure-btn.pressed .btn-sub { color: rgba(255,255,255,0.5); }
+    .departure-status {
+      margin-top: 14px; font-family: var(--num); font-size: 16px;
+      letter-spacing: 0.06em; color: var(--muted); min-height: 20px;
+    }
 
-        .hero-sub {
-            font-weight: 300;
-            font-size: clamp(.9rem,2vw,1.2rem);
-            color: var(--muted); letter-spacing: .2em;
-            margin-bottom: 2rem;
-        }
-        .hero-tags { display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; margin-bottom: 2.5rem; }
-        .tag {
-            font-weight: 500;
-            background: rgba(147,51,234,.15); border: 1px solid rgba(147,51,234,.4);
-            color: #e0c8ff; padding: .4rem 1.1rem; font-size: .75rem;
-            letter-spacing: .08em; border-radius: 2rem; transition: all .3s; cursor: default;
-        }
-        .tag:hover { background: rgba(147,51,234,.35); box-shadow: 0 0 18px rgba(147,51,234,.5); transform: translateY(-2px); }
+    /* voice */
+    .voice-wrap { padding: 36px 24px; border-bottom: 1px solid var(--rule); text-align: center; }
+    .wave-row { display: flex; justify-content: center; align-items: flex-end; gap: 5px; height: 28px; margin-bottom: 12px; }
+    .wave-bar {
+      display: inline-block; width: 3px; border-radius: 1px; background: var(--text);
+      animation: wave 0.85s ease-in-out infinite alternate;
+    }
+    @keyframes wave { 0%{height:4px;opacity:0.15} 100%{height:26px;opacity:0.8} }
+    .wave-bar.muted { animation: none; height: 4px; background: var(--border); }
+    .voice-state {
+      font-family: var(--num); font-size: 13px; font-weight: 700;
+      letter-spacing: 0.2em; text-transform: uppercase; color: var(--text); margin-bottom: 6px;
+    }
+    .voice-sub { font-family: var(--num); font-size: 15px; color: var(--muted); letter-spacing: 0.05em; min-height: 18px; }
+    .voice-toggle {
+      margin-top: 12px; background: none; border: 1px solid var(--border);
+      padding: 7px 16px; font-family: var(--num); font-size: 12px;
+      letter-spacing: 0.12em; text-transform: uppercase; color: var(--sub); cursor: pointer;
+      transition: all 0.15s;
+    }
+    .voice-toggle:hover { border-color: var(--sub); }
 
-        .pac-dots {
-            display: flex; gap: .8rem; justify-content: center;
-            align-items: center; margin: 1.5rem 0;
-        }
-        .dot {
-            width: 10px; height: 10px; background: var(--yellow);
-            border-radius: 50%; box-shadow: 0 0 8px var(--yellow);
-            animation: dpulse 1.5s ease-in-out infinite;
-        }
-        .dot:nth-child(2){animation-delay:.2s}
-        .dot:nth-child(3){animation-delay:.4s}
-        .dot:nth-child(4){animation-delay:.6s}
-        .dot:nth-child(5){animation-delay:.8s}
-        @keyframes dpulse {
-            0%,100%{opacity:1;transform:scale(1)}
-            50%{opacity:.25;transform:scale(.55)}
-        }
+    .resolved-bar {
+      padding: 12px 16px; background: var(--text); color: var(--bg);
+      font-family: var(--num); font-size: 13px; letter-spacing: 0.1em;
+      text-transform: uppercase; display: none; margin-top: 14px;
+      font-weight: 700;
+    }
 
-        .scroll-hint {
-            position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
-            color: var(--muted); font-size: .68rem; letter-spacing: .25em;
-            display: flex; flex-direction: column; align-items: center; gap: .4rem;
-            animation: bounce 2s ease-in-out infinite;
-        }
-        .scroll-hint::after {
-            content: ''; width: 1px; height: 40px;
-            background: linear-gradient(to bottom, var(--purple), transparent);
-        }
-        @keyframes bounce {
-            0%,100%{transform:translateX(-50%) translateY(0)}
-            50%{transform:translateX(-50%) translateY(10px)}
-        }
+    /* logo hero */
+    .logo-block {
+      background: #000;
+      padding: 48px 24px 40px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+    .logo-main {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 56px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      line-height: 1.05;
+      color: var(--text);
+    }
+    .logo-sub {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .logo-sub-line {
+      display: block;
+      width: 36px;
+      height: 1px;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+    .logo-sub-text {
+      font-family: var(--num);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
 
-        /* ── section title ── */
-        .sec-title {
-            font-family: 'Poppins', sans-serif;
-            font-size: clamp(2rem,5vw,3.8rem);
-            font-weight: 800; letter-spacing: -.01em; margin-bottom: 3rem;
-            position: relative; display: inline-block;
-        }
-        .sec-title::before {
-            content: attr(data-num);
-            position: absolute; top: -1.4rem; left: 0;
-            font-size: .62rem; font-weight: 400;
-            color: var(--muted); letter-spacing: .3em;
-        }
-        .sec-title::after {
-            content: ''; position: absolute; bottom: -.4rem; left: 0;
-            width: 60px; height: 4px; border-radius: 2px;
-            background: currentColor; opacity: .7;
-        }
-        .c-green   { color: var(--mint);    text-shadow: 0 0 20px rgba(52,211,153,.4);  }
-        .c-cyan    { color: var(--blue);    text-shadow: 0 0 20px rgba(96,165,250,.4);  }
-        .c-magenta { color: var(--pink);    text-shadow: 0 0 20px rgba(244,114,182,.4); }
-        .c-yellow  { color: var(--yellow);  text-shadow: 0 0 20px rgba(251,191,36,.4);  }
+    .spacer { height: 80px; }
 
-        /* ── skills ── */
-        .skills-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 1.5rem;
-        }
-        .skill-card {
-            background: rgba(147,51,234,.08);
-            border: 1px solid rgba(147,51,234,.25);
-            border-radius: 1.2rem;
-            padding: 2rem; transition: all .4s; position: relative; overflow: hidden;
-        }
-        .skill-card::before {
-            content: ''; position: absolute; top: 0; left: -100%;
-            width: 100%; height: 3px;
-            background: linear-gradient(90deg, transparent, var(--mint), transparent);
-            transition: left .5s;
-        }
-        .skill-card:hover::before { left: 100%; }
-        .skill-card:hover {
-            border-color: var(--mint);
-            box-shadow: 0 8px 40px rgba(52,211,153,.15);
-            transform: translateY(-6px);
-        }
-        .skill-icon { font-size: 2.4rem; margin-bottom: 1rem; }
-        .skill-card h3 {
-            font-weight: 700; font-size: 1.1rem; letter-spacing: .02em;
-            color: #fff; margin-bottom: .7rem;
-        }
-        .skill-card p  { font-weight: 300; color: var(--muted); font-size: .83rem; line-height: 2; }
-        .skill-bar { margin-top: 1rem; background: rgba(255,255,255,.08); height: 5px; border-radius: 3px; overflow: hidden; }
-        .skill-bar-fill {
-            height: 100%; width: 0%;
-            background: linear-gradient(90deg, var(--purple), var(--pink));
-            box-shadow: 0 0 10px var(--pink);
-            transition: width 1.5s ease;
-        }
+    /* chat */
+    .chat-wrap { background: #272320; min-height: calc(100vh - 110px); display: flex; flex-direction: column; }
+    .chat-who-bar { background: #272320; padding: 16px 16px 12px; display: flex; gap: 8px; overflow-x: auto; position: sticky; top: 110px; z-index: 10; border-bottom: 1px solid #333; }
+    .chat-who-btn { background: none; border: 1px solid #444; padding: 7px 16px; font-family: var(--num); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #888; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all 0.15s; border-radius: 1px; }
+    .chat-who-btn.active { background: #ece8e0; color: #242220; border-color: #ece8e0; }
+    .chat-messages { flex: 1; padding: 24px 16px 110px; display: flex; flex-direction: column; gap: 18px; }
+    .chat-msg { display: flex; flex-direction: column; max-width: 82%; }
+    .chat-msg.mine { align-self: flex-end; align-items: flex-end; }
+    .chat-msg.theirs { align-self: flex-start; align-items: flex-start; }
+    .chat-sender-name { font-family: var(--num); font-size: 11px; letter-spacing: 0.13em; text-transform: uppercase; color: #666; margin-bottom: 5px; }
+    .chat-bubble { background: #ece8e0; color: #242220; padding: 14px 18px; font-size: 18px; line-height: 1.55; }
+    .chat-bubble.dark { background: #3a3733; color: #e8e4dc; }
+    .chat-t { font-family: var(--num); font-size: 11px; color: #555; margin-top: 5px; }
+    .chat-input-bar { position: fixed; bottom: 0; left: 0; right: 0; max-width: 480px; margin: 0 auto; background: #ece8e0; padding: 12px 16px; display: flex; gap: 12px; align-items: center; border-top: 1px solid #d4d0c8; z-index: 50; }
+    .chat-input { flex: 1; background: transparent; border: none; border-bottom: 1px solid #c8c4bc; padding: 8px 0; font-size: 18px; font-family: 'Noto Sans JP', sans-serif; color: #242220; outline: none; }
+    .chat-input::placeholder { color: #b0aca4; }
+    .chat-send { background: #242220; color: #ece8e0; border: none; padding: 11px 20px; font-family: var(--num); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; flex-shrink: 0; }
 
-        /* ── ai ── */
-        .ai-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-        .ai-card {
-            background: rgba(244,114,182,.07);
-            border: 1px solid rgba(244,114,182,.25);
-            border-radius: 1.2rem;
-            padding: 2.5rem; position: relative; overflow: hidden;
-        }
-        .ai-card::after {
-            content: ''; position: absolute;
-            top:-50%; right:-50%; width:200%; height:200%;
-            background: radial-gradient(circle, rgba(244,114,182,.05) 0%, transparent 60%);
-            pointer-events: none;
-        }
-        .ai-card h3 {
-            font-weight: 700; font-size: 1.05rem; letter-spacing: .05em;
-            color: var(--pink); margin-bottom: 1.2rem;
-            display: flex; align-items: center; gap: .7rem;
-        }
-        .ai-card h3::before { content: '▶'; font-size: .6rem; }
-        .ai-card p  { font-weight: 300; color: var(--muted); font-size: .85rem; line-height: 2.1; }
-        .hi-m { color: var(--pink); font-weight: 600; }
-
-        /* ── challenge ── */
-        .challenge-list { display: grid; gap: 1rem; }
-        .c-item {
-            background: rgba(96,165,250,.06);
-            border-left: 4px solid var(--blue);
-            border-radius: 0 1rem 1rem 0;
-            padding: 1.5rem 2rem; display: flex; gap: 1.5rem; align-items: flex-start;
-            transition: all .3s;
-        }
-        .c-item:hover { background: rgba(96,165,250,.12); transform: translateX(8px); }
-        .c-num {
-            font-family: 'Poppins', sans-serif;
-            color: var(--blue); font-size: 3rem; font-weight: 900;
-            line-height: 1; opacity: .3;
-        }
-        .c-body h3 {
-            font-weight: 700; font-size: 1rem; letter-spacing: .05em;
-            color: var(--blue); margin-bottom: .5rem;
-        }
-        .c-body p  { font-weight: 300; color: var(--muted); font-size: .83rem; line-height: 2; }
-
-        /* ── footer ── */
-        footer {
-            position: relative; z-index: 1;
-            padding: 3rem 2rem; text-align: center;
-            border-top: 1px solid rgba(147,51,234,.2);
-        }
-        .foot-name {
-            font-family: 'Poppins', sans-serif;
-            font-size: 3rem; font-weight: 900; letter-spacing: .05em;
-            background: linear-gradient(135deg, #fff, var(--pink));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text; margin-bottom: .4rem;
-        }
-        .foot-text { font-weight: 300; color: var(--muted); font-size: .72rem; letter-spacing: .2em; }
-
-        /* ── scroll reveal ── */
-        .reveal {
-            opacity: 0; transform: translateY(38px);
-            transition: opacity .8s ease, transform .8s ease;
-        }
-        .reveal.visible { opacity: 1; transform: translateY(0); }
-
-        /* ── CSS 3D characters ── */
-        .char { position: fixed; z-index: 2; pointer-events: none; }
-
-        /* キャラ1：緑のぷっくりブロブ（左下から飛び出す） */
-        .char-blob-green {
-            bottom: -140px; left: 3vw;
-            animation: peek-up 3s ease-out 1s forwards, bob 3s ease-in-out 4s infinite;
-        }
-        @keyframes peek-up {
-            0%   { bottom: -140px; }
-            100% { bottom: -30px; }
-        }
-        @keyframes bob {
-            0%,100% { transform: translateY(0); }
-            50%      { transform: translateY(-18px); }
-        }
-
-        /* キャラ2：ピンクのふわふわ（右から飛び出す） */
-        .char-blob-pink {
-            right: -120px; top: 30vh;
-            animation: peek-right 3s ease-out 1.5s forwards, bob2 3.5s ease-in-out 5s infinite;
-        }
-        @keyframes peek-right {
-            0%   { right: -120px; }
-            100% { right: -30px; }
-        }
-        @keyframes bob2 {
-            0%,100% { transform: translateY(0) rotate(-5deg); }
-            50%      { transform: translateY(-14px) rotate(5deg); }
-        }
-
-        /* キャラ3：青いびっくり目（右上からひょっこり） */
-        .char-blob-blue {
-            top: -130px; right: 8vw;
-            animation: peek-down 3s ease-out 2s forwards, bob3 4s ease-in-out 5.5s infinite;
-        }
-        @keyframes peek-down {
-            0%   { top: -130px; }
-            100% { top: -20px; }
-        }
-        @keyframes bob3 {
-            0%,100% { transform: translateY(0) rotate(3deg); }
-            50%      { transform: translateY(12px) rotate(-3deg); }
-        }
-
-        /* キャラ4：黄色い小さいの（左中段） */
-        .char-blob-yellow {
-            left: -100px; top: 55vh;
-            animation: peek-left 3s ease-out 2.5s forwards, bob4 2.8s ease-in-out 6s infinite;
-        }
-        @keyframes peek-left {
-            0%   { left: -100px; }
-            100% { left: -10px; }
-        }
-        @keyframes bob4 {
-            0%,100% { transform: translateY(0) rotate(8deg); }
-            50%      { transform: translateY(-10px) rotate(-8deg); }
-        }
-
-        /* 目のまばたき */
-        .eye { animation: blink 4s ease-in-out infinite; }
-        @keyframes blink {
-            0%,90%,100% { transform: scaleY(1); }
-            95%          { transform: scaleY(.05); }
-        }
-
-        /* ── responsive ── */
-        @media (max-width: 768px) {
-            .nav-menu {
-                display: none; position: fixed; top: 58px; left: 0; width: 100%;
-                background: rgba(13,8,32,.96); border-bottom: 1px solid rgba(147,51,234,.2);
-                padding: 1rem 0; flex-direction: column; align-items: center;
-            }
-            .nav-menu.open { display: flex; }
-            .nav-links { flex-direction: column; text-align: center; gap: 1.4rem; }
-            .hamburger { display: flex; }
-            section { padding: 5rem 1.2rem 3rem; }
-            .skills-grid, .ai-grid { grid-template-columns: 1fr; }
-            .char { display: none; }
-        }
-
-    </style>
+    /* settings */
+    .settings-overlay {
+      position: fixed; inset: 0; background: rgba(36,34,32,0.55);
+      z-index: 200; display: none; flex-direction: column; justify-content: flex-end;
+    }
+    .settings-overlay.open { display: flex; }
+    .settings-sheet {
+      background: var(--bg); padding: 32px 24px 52px;
+      width: 100%; max-width: 480px; margin: 0 auto;
+      border-top: 1px solid var(--rule);
+    }
+    .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+    .settings-title { font-size: 22px; font-weight: 400; color: var(--text); }
+    .settings-close { background: none; border: none; font-size: 22px; color: var(--muted); cursor: pointer; line-height: 1; padding: 4px; }
+    .settings-field { margin-bottom: 22px; }
+    .settings-field label { display: block; font-family: var(--num); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .settings-input { width: 100%; border: none; border-bottom: 1px solid var(--border); background: transparent; padding: 10px 0; font-size: 22px; font-family: 'Noto Sans JP', sans-serif; color: var(--text); outline: none; }
+    .settings-input:focus { border-bottom-color: var(--text); }
+  </style>
 </head>
 <body>
 
-<div class="bg-grid"></div>
-<canvas id="bg-canvas"></canvas>
-
-<!-- 3D CHARACTERS -->
-<!-- キャラ1：緑のブロブ（左下） -->
-<div class="char char-blob-green">
-  <svg width="160" height="170" viewBox="0 0 160 170" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <radialGradient id="g1" cx="40%" cy="35%">
-        <stop offset="0%" stop-color="#6ee7b7"/>
-        <stop offset="100%" stop-color="#059669"/>
-      </radialGradient>
-      <filter id="shadow1"><feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#059669" flood-opacity=".5"/></filter>
-    </defs>
-    <!-- body -->
-    <ellipse cx="80" cy="105" rx="72" ry="65" fill="url(#g1)" filter="url(#shadow1)"/>
-    <!-- belly shine -->
-    <ellipse cx="65" cy="90" rx="28" ry="22" fill="rgba(255,255,255,.15)"/>
-    <!-- left eye white -->
-    <circle cx="57" cy="80" r="22" fill="white"/>
-    <!-- right eye white -->
-    <circle cx="103" cy="80" r="22" fill="white"/>
-    <!-- pupils -->
-    <g class="eye"><circle cx="60" cy="83" r="12" fill="#1a3a2a"/><circle cx="64" cy="79" r="4" fill="white"/></g>
-    <g class="eye"><circle cx="106" cy="83" r="12" fill="#1a3a2a"/><circle cx="110" cy="79" r="4" fill="white"/></g>
-    <!-- smile -->
-    <path d="M58 110 Q80 128 102 110" stroke="#065f46" stroke-width="4" fill="none" stroke-linecap="round"/>
-    <!-- teeth -->
-    <rect x="68" y="110" width="11" height="10" rx="2" fill="white"/>
-    <rect x="81" y="112" width="11" height="8" rx="2" fill="white"/>
-    <!-- horns -->
-    <ellipse cx="52" cy="44" rx="10" ry="20" fill="#34d399" transform="rotate(-15 52 44)"/>
-    <ellipse cx="108" cy="44" rx="10" ry="20" fill="#34d399" transform="rotate(15 108 44)"/>
-    <!-- cheek blush -->
-    <ellipse cx="40" cy="100" rx="12" ry="8" fill="rgba(255,180,180,.35)"/>
-    <ellipse cx="120" cy="100" rx="12" ry="8" fill="rgba(255,180,180,.35)"/>
-  </svg>
-</div>
-
-<!-- キャラ2：ピンクのふわふわ（右） -->
-<div class="char char-blob-pink">
-  <svg width="140" height="155" viewBox="0 0 140 155" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <radialGradient id="g2" cx="38%" cy="32%">
-        <stop offset="0%" stop-color="#fbb6ce"/>
-        <stop offset="100%" stop-color="#db2777"/>
-      </radialGradient>
-      <filter id="shadow2"><feDropShadow dx="0" dy="6" stdDeviation="9" flood-color="#db2777" flood-opacity=".4"/></filter>
-    </defs>
-    <!-- fluffy body - multiple overlapping circles -->
-    <circle cx="70" cy="90" r="58" fill="url(#g2)" filter="url(#shadow2)"/>
-    <circle cx="30" cy="75" r="26" fill="#f9a8d4"/>
-    <circle cx="110" cy="75" r="26" fill="#f9a8d4"/>
-    <circle cx="50" cy="50" r="22" fill="#fbb6ce"/>
-    <circle cx="90" cy="50" r="22" fill="#fbb6ce"/>
-    <circle cx="70" cy="40" r="20" fill="#fce7f3"/>
-    <!-- shine -->
-    <ellipse cx="52" cy="72" rx="20" ry="16" fill="rgba(255,255,255,.2)"/>
-    <!-- eyes -->
-    <circle cx="52" cy="82" r="19" fill="white"/>
-    <circle cx="88" cy="82" r="19" fill="white"/>
-    <g class="eye"><circle cx="55" cy="85" r="10" fill="#831843"/><circle cx="58" cy="82" r="3.5" fill="white"/></g>
-    <g class="eye" style="animation-delay:.5s"><circle cx="91" cy="85" r="10" fill="#831843"/><circle cx="94" cy="82" r="3.5" fill="white"/></g>
-    <!-- smile -->
-    <path d="M50 108 Q70 122 90 108" stroke="#9d174d" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-    <!-- ear tufts -->
-    <circle cx="20" cy="45" r="14" fill="#f9a8d4"/>
-    <circle cx="120" cy="45" r="14" fill="#f9a8d4"/>
-    <!-- blush -->
-    <ellipse cx="36" cy="100" rx="11" ry="7" fill="rgba(255,100,150,.3)"/>
-    <ellipse cx="104" cy="100" rx="11" ry="7" fill="rgba(255,100,150,.3)"/>
-  </svg>
-</div>
-
-<!-- キャラ3：青いびっくり目（右上） -->
-<div class="char char-blob-blue">
-  <svg width="130" height="150" viewBox="0 0 130 150" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <radialGradient id="g3" cx="40%" cy="30%">
-        <stop offset="0%" stop-color="#93c5fd"/>
-        <stop offset="100%" stop-color="#1d4ed8"/>
-      </radialGradient>
-      <filter id="shadow3"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#1d4ed8" flood-opacity=".5"/></filter>
-    </defs>
-    <!-- long oval body -->
-    <ellipse cx="65" cy="95" rx="52" ry="60" fill="url(#g3)" filter="url(#shadow3)"/>
-    <!-- shine -->
-    <ellipse cx="48" cy="72" rx="18" ry="14" fill="rgba(255,255,255,.2)"/>
-    <!-- big surprised eyes -->
-    <circle cx="44" cy="75" r="24" fill="white"/>
-    <circle cx="86" cy="75" r="24" fill="white"/>
-    <g class="eye"><circle cx="47" cy="78" r="14" fill="#1e3a8a"/><circle cx="51" cy="73" r="5" fill="white"/></g>
-    <g class="eye" style="animation-delay:1s"><circle cx="89" cy="78" r="14" fill="#1e3a8a"/><circle cx="93" cy="73" r="5" fill="white"/></g>
-    <!-- O mouth - surprised -->
-    <ellipse cx="65" cy="118" rx="12" ry="14" fill="#1e3a8a"/>
-    <ellipse cx="65" cy="118" rx="8" ry="10" fill="#172554"/>
-    <!-- antenna -->
-    <line x1="65" y1="35" x2="55" y2="10" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="53" cy="8" r="6" fill="#fbbf24"/>
-    <!-- little arms -->
-    <ellipse cx="17" cy="100" rx="14" ry="9" fill="#3b82f6" transform="rotate(-30 17 100)"/>
-    <ellipse cx="113" cy="100" rx="14" ry="9" fill="#3b82f6" transform="rotate(30 113 100)"/>
-  </svg>
-</div>
-
-<!-- キャラ4：黄色い小さいの（左中段） -->
-<div class="char char-blob-yellow">
-  <svg width="110" height="120" viewBox="0 0 110 120" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <radialGradient id="g4" cx="38%" cy="32%">
-        <stop offset="0%" stop-color="#fef08a"/>
-        <stop offset="100%" stop-color="#d97706"/>
-      </radialGradient>
-      <filter id="shadow4"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#d97706" flood-opacity=".4"/></filter>
-    </defs>
-    <!-- round body -->
-    <circle cx="55" cy="72" r="48" fill="url(#g4)" filter="url(#shadow4)"/>
-    <!-- shine -->
-    <ellipse cx="40" cy="55" rx="16" ry="13" fill="rgba(255,255,255,.25)"/>
-    <!-- eyes -->
-    <circle cx="40" cy="65" r="16" fill="white"/>
-    <circle cx="70" cy="65" r="16" fill="white"/>
-    <g class="eye" style="animation-delay:1.5s"><circle cx="42" cy="68" r="9" fill="#78350f"/><circle cx="45" cy="64" r="3" fill="white"/></g>
-    <g class="eye"><circle cx="72" cy="68" r="9" fill="#78350f"/><circle cx="75" cy="64" r="3" fill="white"/></g>
-    <!-- cheeky grin -->
-    <path d="M36 90 Q55 105 74 90" stroke="#92400e" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-    <!-- tiny horns -->
-    <ellipse cx="38" cy="26" rx="7" ry="14" fill="#fbbf24" transform="rotate(-20 38 26)"/>
-    <ellipse cx="72" cy="26" rx="7" ry="14" fill="#fbbf24" transform="rotate(20 72 26)"/>
-    <!-- blush -->
-    <ellipse cx="26" cy="82" rx="10" ry="7" fill="rgba(255,150,50,.35)"/>
-    <ellipse cx="84" cy="82" rx="10" ry="7" fill="rgba(255,150,50,.35)"/>
-  </svg>
-</div>
-
-<!-- NAV -->
-<nav>
-    <div class="nav-logo">FLO<span>TAN</span></div>
-    <div class="nav-menu" id="navMenu">
-        <ul class="nav-links">
-            <li><a href="#hero">TOP</a></li>
-            <li><a href="#skills">SKILLS</a></li>
-            <li><a href="#ai">AI</a></li>
-            <li><a href="#challenge">CHALLENGE</a></li>
-        </ul>
-    </div>
-    <div class="hamburger" id="hamburger">
-        <span></span><span></span><span></span>
-    </div>
+<nav class="nav">
+  <div class="nav-logo-small">
+    <span class="nav-logo-line"></span>
+    <span class="nav-logo-text">Family Compass</span>
+    <span class="nav-logo-line"></span>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="nav-date" id="nav-date">--</div>
+    <button onclick="openSettings()" style="background:none;border:none;cursor:pointer;font-family:var(--num);font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);padding:4px 0;">Edit</button>
+  </div>
 </nav>
 
-<!-- HERO -->
-<section id="hero">
-    <div class="container">
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('home',this)">Dashboard</div>
+  <div class="tab" id="tab-husband" onclick="switchTab('husband',this)">Chanmi</div>
+  <div class="tab" id="tab-wife" onclick="switchTab('wife',this)">Flotan</div>
+  <div class="tab" id="tab-kids" onclick="switchTab('kids',this)">Kids</div>
+  <div class="tab" onclick="switchTab('chat',this)">Chat</div>
+</div>
 
-        <!-- Avatar -->
-        <div class="avatar-wrapper avatar-float reveal">
-            <div class="avatar-ring"></div>
-            <div class="avatar-ring2"></div>
-            <div class="avatar-img">
-                <img src="avatar.png" alt="FLOTAN"/>
-            </div>
-            <div class="goggles-glow"></div>
-            <div class="avatar-scan"></div>
-        </div>
+<!-- Chat画面 -->
+<div id="screen-chat" class="screen">
+  <div class="chat-wrap">
+    <div class="chat-who-bar" id="chat-who-bar"></div>
+    <div class="chat-messages" id="chat-messages"></div>
+  </div>
+  <div class="chat-input-bar">
+    <input class="chat-input" id="chat-input" type="text" placeholder="メッセージを入力…" onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" onclick="sendChat()">送信</button>
+  </div>
+</div>
 
-        <div class="hero-badge reveal">◈ PLAYER_001 ONLINE ◈</div>
-        <h1 class="hero-name glitch reveal" data-text="FLOTAN">FLOTAN</h1>
-        <p class="hero-sub reveal">SPACE DESIGNER</p>
+<!-- Kids画面 -->
+<div id="screen-kids" class="screen">
 
-        <div class="hero-tags reveal">
-            <span class="tag">▸ 3Dモデリング</span>
-            <span class="tag">▸ 3Dプリンター</span>
-            <span class="tag">▸ 展示設計</span>
-        </div>
-
-        <div class="pac-dots reveal">
-            <div class="dot"></div><div class="dot"></div>
-            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-        </div>
-
-        <div class="scroll-hint">SCROLL</div>
+  <div class="block">
+    <div class="blk-label"><span data-person="kid1">Korotan</span></div>
+    <div style="text-align:center; padding: 16px 0 8px;">
+      <button class="departure-btn" id="pickup-btn-kid1" onclick="requestPickup('kid1')" style="width:180px;height:180px;font-size:22px;letter-spacing:0.06em;">
+        迎えに来て！
+      </button>
     </div>
-</section>
+    <div id="pickup-status-kid1" style="margin-top:20px; font-family:var(--num); font-size:15px; color:var(--muted); text-align:center; min-height:20px; line-height:1.6;"></div>
+  </div>
 
-<!-- SKILLS -->
-<section id="skills">
-    <div class="container">
-        <h2 class="sec-title c-green reveal" data-num="// 01">SKILLS &amp; INTERESTS</h2>
-        <div class="skills-grid">
-            <div class="skill-card reveal">
-                <div class="skill-icon">⬡</div>
-                <h3>3Dパース制作</h3>
-                <p>展示会の設計、デザイン・子どもの遊び場を手がけ、3Dパースを得意としています。</p>
-                <div class="skill-bar"><div class="skill-bar-fill" data-width="90"></div></div>
-            </div>
-            <div class="skill-card reveal" style="transition-delay:.15s">
-                <div class="skill-icon">⬢</div>
-                <h3>3Dプリンター造形</h3>
-                <p>3Dプリンターによる造形に強い興味を持っています。デジタルデータを物理的な形に変換するプロセスに魅力を感じています。</p>
-                <div class="skill-bar"><div class="skill-bar-fill" data-width="75"></div></div>
-            </div>
-            <div class="skill-card reveal" style="transition-delay:.3s">
-                <div class="skill-icon">◈</div>
-                <h3>空間デザイン</h3>
-                <p>展示会・什器・子どもの遊び場デザインを専門に行っています。AIを活用して環境構築を最適化し、より創造的な空間体験を生み出します。</p>
-                <div class="skill-bar"><div class="skill-bar-fill" data-width="85"></div></div>
-            </div>
+  <div class="block">
+    <div class="blk-label"><span data-person="kid2">Lori</span></div>
+    <div style="text-align:center; padding: 16px 0 8px;">
+      <button class="departure-btn" id="pickup-btn-kid2" onclick="requestPickup('kid2')" style="width:180px;height:180px;font-size:22px;letter-spacing:0.06em;">
+        迎えに来て！
+      </button>
+    </div>
+    <div id="pickup-status-kid2" style="margin-top:20px; font-family:var(--num); font-size:15px; color:var(--muted); text-align:center; min-height:20px; line-height:1.6;"></div>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<!-- ダッシュボード -->
+<div id="screen-home" class="screen active">
+
+  <div id="pickup-requests" style="display:none;">
+  </div>
+
+  <div class="block">
+    <div class="blk-label" id="blk-husband"><span data-person="husband">Chanmi</span></div>
+    <div class="status-row">
+      <div class="status-label">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="husband-status-text">連絡待ち</span>
+      </div>
+      <span class="status-time" id="husband-updated">--</span>
+    </div>
+    <div id="eta-mini" style="font-family:var(--num); font-size:16px; color:var(--muted); margin-top:14px; letter-spacing:0.04em;">
+      「出発」と言うと到着予測が表示されます
+    </div>
+  </div>
+
+  <div class="block">
+    <div class="blk-label">今日の密度</div>
+    <div class="density-pill-wrap">
+      <div class="density-pill-fill" style="width:62%"></div>
+      <div class="density-pill-labels">
+        <span>余裕</span>
+        <span>やや忙しい — 62%</span>
+        <span>限界</span>
+      </div>
+    </div>
+    <div style="margin-top:14px; font-size:15px; color:var(--muted); letter-spacing:0.02em;">夕食は簡単メニューにすると余裕が生まれます</div>
+  </div>
+
+  <div class="block block-dark">
+    <div class="blk-label">Today's Timeline</div>
+    <ul class="timeline">
+      <li class="tl-item">
+        <span class="tl-time">8:00</span>
+        <span class="tl-body"><span class="ptag" data-person="kid1">Korotan</span>登校 <span class="tl-badge">体育着持参</span></span>
+      </li>
+      <li class="tl-item">
+        <span class="tl-time">8:15</span>
+        <span class="tl-body"><span class="ptag" data-person="kid2">Lori</span>登校</span>
+      </li>
+      <li class="tl-item">
+        <span class="tl-time">9:30</span>
+        <span class="tl-body"><span class="ptag" data-person="kid3">Peach</span>幼稚園体験</span>
+      </li>
+      <li class="tl-item">
+        <span class="tl-time">15:30</span>
+        <span class="tl-body"><span class="ptag" data-person="kid1">Korotan</span>下校 <span class="tl-badge">お迎え</span></span>
+      </li>
+      <li class="tl-item">
+        <span class="tl-time">16:00</span>
+        <span class="tl-body"><span class="ptag" data-person="kid2">Lori</span>ミニバス練習</span>
+      </li>
+      <li class="tl-item">
+        <span class="tl-time">18:30</span>
+        <span class="tl-body"><span class="ptag" data-person="kid2">Lori</span>ミニバスお迎え</span>
+      </li>
+      <li class="tl-item">
+        <span class="tl-time" id="timeline-eta" style="font-weight:500;">--:--</span>
+        <span class="tl-body" id="timeline-eta-text" style="color:var(--muted);"><span data-person="husband">Chanmi</span> 帰宅（未定）</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<!-- Chanmi画面 -->
+<div id="screen-husband" class="screen">
+
+  <div class="departure-wrap">
+    <button class="departure-btn" id="departure-btn" onclick="pressDeparture()">
+      <span id="btn-main-label">出発する</span>
+    </button>
+    <div class="departure-status" id="departure-status">未送信</div>
+  </div>
+
+  <div class="voice-wrap">
+    <div id="voice-start-screen">
+      <div style="font-family:var(--num); font-size:13px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); margin-bottom:14px;">音声モード</div>
+      <div style="font-size:26px; font-weight:600; color:var(--text); margin-bottom:10px; line-height:1.4;">
+        タップ1回でマイク常時オン
+      </div>
+      <div style="font-size:16px; color:var(--muted); margin-bottom:20px; line-height:1.6; font-family:var(--num);">
+        「出発」と言うだけで家族に通知されます
+      </div>
+      <button onclick="initVoice()" class="btn filled" style="width:auto; display:inline-block; padding:11px 26px; margin-top:0;">起動する</button>
+    </div>
+    <div id="voice-active-screen" style="display:none;">
+      <div class="wave-row">
+        <span class="wave-bar" style="animation-delay:0s"></span>
+        <span class="wave-bar" style="animation-delay:0.15s"></span>
+        <span class="wave-bar" style="animation-delay:0.3s"></span>
+        <span class="wave-bar" style="animation-delay:0.45s"></span>
+        <span class="wave-bar" style="animation-delay:0.6s"></span>
+      </div>
+      <div id="voice-label" class="voice-state">聞いています</div>
+      <div id="voice-status" class="voice-sub">「出発」と言うと送信されます</div>
+      <button onclick="toggleVoice()" id="voice-toggle-btn" class="voice-toggle">マイクをオフにする</button>
+    </div>
+  </div>
+
+  <div class="eta-block">
+    <div class="eta-eyebrow">Estimated Arrival</div>
+    <div class="eta-number" id="eta-display">--:--</div>
+    <div class="eta-caption" id="eta-sub">出発後に自動計算されます</div>
+  </div>
+
+  <div class="block">
+    <div class="blk-label">今日の家族予定</div>
+    <ul class="sched-list">
+      <li class="sched-item">
+        <div>
+          <div class="sched-name"><span data-person="kid1">Korotan</span> 塾</div>
+          <div class="sched-detail">徒歩20分</div>
         </div>
-    </div>
-</section>
-
-<!-- AI -->
-<section id="ai">
-    <div class="container">
-        <h2 class="sec-title c-magenta reveal" data-num="// 02">AI × わたし</h2>
-        <div class="ai-grid">
-            <div class="ai-card reveal">
-                <h3>AIとはどういう存在か</h3>
-                <p>
-                    AIは<span class="hi-m">相棒のような存在</span>です。<br><br>
-                    やりたいことを一緒に考えてくれ、その時の状況に合わせて提案してくれます。とても頼もしい存在として、日々の制作活動を支えてくれています。
-                </p>
-            </div>
-            <div class="ai-card reveal" style="transition-delay:.2s">
-                <h3>AIとどう向き合いたいか</h3>
-                <p>
-                    AIは日々進化しています。<br><br>
-                    リスク、自分のやりたいことを総合的に判断して、AIと共に好奇心をもって挑戦を続けたいと思っています。
-                </p>
-            </div>
+        <div class="sched-right">
+          <span class="sched-label">お迎え</span>
+          <span class="sched-time">21:45</span>
         </div>
-    </div>
-</section>
-
-<!-- CHALLENGE -->
-<section id="challenge">
-    <div class="container">
-        <h2 class="sec-title c-cyan reveal" data-num="// 03">CHALLENGE</h2>
-        <p class="reveal" style="color:var(--muted);margin-bottom:2rem;font-size:.87rem;letter-spacing:.1em">この授業を通して挑戦したいこと</p>
-        <div class="challenge-list">
-            <div class="c-item reveal">
-                <div class="c-num">01</div>
-                <div class="c-body">
-                    <h3>環境構築の最適化</h3>
-                    <p>空間デザイン・設計のため、AIを使用して環境構築を最適化したいと考えています。より効率的で創造的なワークフローを構築します。</p>
-                </div>
-            </div>
-            <div class="c-item reveal" style="transition-delay:.15s">
-                <div class="c-num">02</div>
-                <div class="c-body">
-                    <h3>子どもの遊びをAIと共に設計</h3>
-                    <p>3人の子どもを育てているため、子どもの遊びをAIと共に考えてみたいです。AIの視点を取り入れることで、新しい遊びの形を探求します。</p>
-                </div>
-            </div>
-            <div class="c-item reveal" style="transition-delay:.3s">
-                <div class="c-num">03</div>
-                <div class="c-body">
-                    <h3>3Dデータ × AIの融合</h3>
-                    <p>得意とする3Dデータ制作にAIを組み合わせ、新たな表現の可能性を探ります。好奇心を満たすための挑戦を続けます。</p>
-                </div>
-            </div>
+      </li>
+      <li class="sched-item">
+        <div>
+          <div class="sched-name"><span data-person="kid2">Lori</span> ミニバス</div>
+          <div class="sched-detail">小学校体育館 / 徒歩5分</div>
         </div>
-    </div>
-</section>
+        <div class="sched-right">
+          <span class="sched-label">お迎え</span>
+          <span class="sched-time">18:30</span>
+        </div>
+      </li>
+      <li class="sched-item">
+        <div>
+          <div class="sched-name"><span data-person="kid3">Peach</span> 就寝</div>
+          <div class="sched-detail">この時間までに帰ると顔が見られます</div>
+        </div>
+        <div class="sched-right">
+          <span class="sched-label">目安</span>
+          <span class="sched-time">19:00</span>
+        </div>
+      </li>
+    </ul>
+    <button class="btn filled" onclick="offerPickup()"><span data-person="kid2">Lori</span>のお迎え、自分が行ける</button>
+  </div>
 
-<!-- FOOTER -->
-<footer>
-    <div class="foot-name">FLOTAN</div>
-    <p class="foot-text">SPACE DESIGNER</p>
-    <div class="pac-dots" style="margin-top:1.5rem">
-        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  <div class="spacer"></div>
+</div>
+
+<!-- Flotan画面 -->
+<div id="screen-wife" class="screen">
+
+  <div id="wife-pickup-requests" style="display:none;"></div>
+
+  <div id="family-notify-group" style="display:none;">
+    <div class="block">
+      <div class="blk-label">通知済み</div>
+      <ul class="notify-list">
+        <li class="notify-item flash">
+          <div class="notify-who" data-person="wife">Flotan</div>
+          <div class="notify-msg" id="wife-notify-body">Chanmiが出発しました。-- 頃に到着予定です</div>
+        </li>
+        <li class="notify-item flash" style="animation-delay:0.25s">
+          <div class="notify-who" data-person="kid1">Korotan</div>
+          <div class="notify-msg" id="hikaru-notify-body">パパがもうすぐ帰ってくるよ！-- 頃の予定だよ</div>
+        </li>
+        <li class="notify-item flash" style="animation-delay:0.5s">
+          <div class="notify-who" data-person="kid2">Lori</div>
+          <div class="notify-msg" id="yuto-notify-body">パパがもうすぐ帰ってくるよ！-- 頃の予定だよ</div>
+        </li>
+      </ul>
     </div>
-</footer>
+  </div>
+
+  <div class="eta-block">
+    <div class="eta-eyebrow" id="eta-eyebrow-wife"><span data-person="husband">Chanmi</span> — Estimated Arrival</div>
+    <div class="eta-number" id="wife-eta-display">--:--</div>
+    <div class="eta-caption" id="wife-eta-sub">出発後に表示されます</div>
+  </div>
+
+  <div class="block">
+    <div class="blk-label">今日のお迎え</div>
+    <ul class="sched-list">
+      <li class="sched-item">
+        <div>
+          <div class="sched-name"><span data-person="kid1">Korotan</span> 塾</div>
+          <div class="sched-detail">徒歩20分</div>
+        </div>
+        <div class="sched-right">
+          <span class="sched-label">お迎え</span>
+          <div class="sched-time-row">
+            <span class="sched-time">21:45</span>
+            <span class="badge pending">未</span>
+          </div>
+        </div>
+      </li>
+      <li class="sched-item">
+        <div>
+          <div class="sched-name"><span data-person="kid2">Lori</span> ミニバス</div>
+          <div class="sched-detail">小学校体育館 / 徒歩5分</div>
+        </div>
+        <div class="sched-right">
+          <span class="sched-label">お迎え</span>
+          <div class="sched-time-row">
+            <span class="sched-time">18:30</span>
+            <span class="badge pending" id="pickup-status-badge">未</span>
+          </div>
+        </div>
+      </li>
+    </ul>
+    <div class="resolved-bar" id="pickup-resolved"><span data-person="husband">Chanmi</span>が<span data-person="kid2">Lori</span>のお迎えを引き受けました</div>
+    <button class="btn filled" id="notify-child-btn" onclick="notifyChild()"><span data-person="kid2">Lori</span>に「もうすぐ行くよ」を送る</button>
+  </div>
+
+  <div class="block">
+    <div class="blk-label"><span data-person="kid3">Peach</span> — Today's Schedule</div>
+    <ul class="sched-list">
+      <li class="sched-item">
+        <div>
+          <div class="sched-name">幼稚園体験</div>
+          <div class="sched-detail">○○幼稚園 / 9:30〜11:30</div>
+        </div>
+        <div class="sched-right">
+          <span class="sched-label">開始</span>
+          <span class="sched-time">9:30</span>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <div class="blk-label">提出物 / 持ち物</div>
+    <ul class="check-list">
+      <li class="check-item">
+        <div class="check-box checked" id="check1" onclick="toggleCheck('check1','title1')">✓</div>
+        <div>
+          <div class="check-title done" id="title1">体育着（月曜持参）</div>
+          <div class="check-who" data-person="kid1">Korotan</div>
+        </div>
+        <span class="check-due">完了</span>
+      </li>
+      <li class="check-item">
+        <div class="check-box" id="check2" onclick="toggleCheck('check2','title2')"></div>
+        <div>
+          <div class="check-title" id="title2">理科の宿題プリント</div>
+          <div class="check-who" data-person="kid2">Lori</div>
+        </div>
+        <span class="check-due urgent">明日</span>
+      </li>
+      <li class="check-item">
+        <div class="check-box" id="check3" onclick="toggleCheck('check3','title3')"></div>
+        <div>
+          <div class="check-title" id="title3">給食費（現金）</div>
+          <div class="check-who" data-person="kid1">Korotan</div>
+        </div>
+        <span class="check-due urgent">今月</span>
+      </li>
+      <li class="check-item">
+        <div class="check-box checked" id="check4" onclick="toggleCheck('check4','title4')">✓</div>
+        <div>
+          <div class="check-title done" id="title4">ミニバス参加費（振込）</div>
+          <div class="check-who" data-person="kid2">Lori</div>
+        </div>
+        <span class="check-due">完了</span>
+      </li>
+      <li class="check-item">
+        <div class="check-box" id="check5" onclick="toggleCheck('check5','title5')"></div>
+        <div>
+          <div class="check-title" id="title5">日本脳炎ワクチン 1期（要予約）</div>
+          <div class="check-who" data-person="kid3">Peach</div>
+        </div>
+        <span class="check-due urgent">今月</span>
+      </li>
+    </ul>
+  </div>
+
+  <div class="spacer"></div>
+</div>
 
 <script>
-// ── Canvas setup ───────────────────────────────────────────────
-const canvas = document.getElementById('bg-canvas');
-const ctx    = canvas.getContext('2d');
-let W, H, mouse = { x: 0, y: 0 };
+  const d = new Date();
+  const days = ['日','月','火','水','木','金','土'];
+  document.getElementById('nav-date').textContent =
+    `${d.getMonth()+1}.${String(d.getDate()).padStart(2,'0')} ${days[d.getDay()]}`;
 
-function resize() {
-    W = canvas.width  = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-}
-resize();
-window.addEventListener('resize', resize);
-window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  // --- Name management ---
+  const defaultNames = { husband: 'Chanmi', wife: 'Flotan', kid1: 'Korotan', kid2: 'Lori', kid3: 'Peach' };
+  let names = { ...defaultNames };
 
-// ── 1. Particle Network (データビジュアライゼーション風) ───────
-class Node {
-    constructor() { this.reset(true); }
-    reset(rand) {
-        this.x  = Math.random() * W;
-        this.y  = rand ? Math.random() * H : (Math.random() > .5 ? -10 : H + 10);
-        this.vx = (Math.random() - .5) * .6;
-        this.vy = (Math.random() - .5) * .6;
-        this.r  = Math.random() * 2.5 + .8;
-        this.col = ['#00ff88','#00ffff','#ff00ff','#ffff00'][Math.floor(Math.random()*4)];
-        this.a  = Math.random() * .6 + .3;
-        this.pulse = Math.random() * Math.PI * 2;
-    }
-    update() {
-        // マウスに引き寄せられる弱い力
-        const dx = mouse.x - this.x, dy = mouse.y - this.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist < 200) {
-            this.vx += dx / dist * .03;
-            this.vy += dy / dist * .03;
-        }
-        this.vx *= .995; this.vy *= .995;
-        this.x += this.vx; this.y += this.vy;
-        this.pulse += .04;
-        if (this.x < -20 || this.x > W+20 || this.y < -20 || this.y > H+20) this.reset(false);
-    }
-    draw() {
-        const pr = this.r + Math.sin(this.pulse) * .8;
-        ctx.save();
-        ctx.globalAlpha = this.a;
-        ctx.fillStyle = this.col;
-        ctx.shadowBlur = 14; ctx.shadowColor = this.col;
-        ctx.beginPath(); ctx.arc(this.x, this.y, pr, 0, Math.PI*2); ctx.fill();
-        ctx.restore();
-    }
-}
+  function loadNames() {
+    try { const s = localStorage.getItem('familyNames'); if (s) names = { ...defaultNames, ...JSON.parse(s) }; } catch(e) {}
+    applyNames();
+  }
 
-// ── 2. 接続ライン描画 ──────────────────────────────────────────
-function drawConnections(nodes) {
-    const DIST = 130;
-    for (let i = 0; i < nodes.length; i++) {
-        for (let j = i+1; j < nodes.length; j++) {
-            const dx = nodes[i].x - nodes[j].x;
-            const dy = nodes[i].y - nodes[j].y;
-            const d  = Math.sqrt(dx*dx + dy*dy);
-            if (d < DIST) {
-                const a = (1 - d/DIST) * .35;
-                ctx.save();
-                ctx.globalAlpha = a;
-                ctx.strokeStyle = nodes[i].col;
-                ctx.lineWidth   = .8;
-                ctx.shadowBlur  = 4; ctx.shadowColor = nodes[i].col;
-                ctx.beginPath();
-                ctx.moveTo(nodes[i].x, nodes[i].y);
-                ctx.lineTo(nodes[j].x, nodes[j].y);
-                ctx.stroke();
-                ctx.restore();
-            }
-        }
-    }
-}
-
-// ── 3. 流れるデータストリーム ──────────────────────────────────
-class DataStream {
-    constructor() { this.reset(); }
-    reset() {
-        this.x    = Math.random() * W;
-        this.y    = -20;
-        this.len  = Math.floor(Math.random() * 18 + 8);
-        this.speed= Math.random() * 3 + 1.5;
-        this.chars= Array.from({length: this.len}, () =>
-            String.fromCharCode(0x30A0 + Math.floor(Math.random() * 96))
-        );
-        this.timer = 0;
-        this.col  = Math.random() > .5 ? '#00ff88' : '#00ffff';
-    }
-    update() {
-        this.y += this.speed;
-        this.timer++;
-        if (this.timer % 5 === 0) {
-            this.chars[Math.floor(Math.random()*this.len)] =
-                String.fromCharCode(0x30A0 + Math.floor(Math.random()*96));
-        }
-        if (this.y > H + this.len * 16) this.reset();
-    }
-    draw() {
-        for (let i = 0; i < this.len; i++) {
-            const yy = this.y - i * 16;
-            if (yy < -16 || yy > H+16) continue;
-            const bright = i === 0;
-            ctx.save();
-            ctx.globalAlpha = bright ? .9 : Math.max(0, (.7 - i / this.len * .7));
-            ctx.fillStyle   = bright ? '#ffffff' : this.col;
-            ctx.shadowBlur  = bright ? 16 : 6;
-            ctx.shadowColor = this.col;
-            ctx.font = '13px monospace';
-            ctx.fillText(this.chars[i], this.x, yy);
-            ctx.restore();
-        }
-    }
-}
-
-// ── 4. 回転ワイヤーキューブ ────────────────────────────────────
-class WireCube {
-    constructor() { this.reset(true); }
-    reset(rand) {
-        this.x   = Math.random() * W;
-        this.y   = rand ? Math.random() * H : H + 60;
-        this.s   = Math.random() * 35 + 15;
-        this.rx  = Math.random() * Math.PI * 2;
-        this.ry  = Math.random() * Math.PI * 2;
-        this.drx = (Math.random()-.5)*.025;
-        this.dry = (Math.random()-.5)*.025;
-        this.vy  = -(Math.random()*.3+.1);
-        this.a   = Math.random()*.25+.1;
-        this.col = ['#00ff88','#00ffff','#ff00ff'][Math.floor(Math.random()*3)];
-    }
-    proj(x,y,z) {
-        const cy=Math.cos(this.ry), sy=Math.sin(this.ry);
-        const cx=Math.cos(this.rx), sx=Math.sin(this.rx);
-        let nx = cy*x + sy*z;
-        let nz = -sy*x + cy*z;
-        let ny = cx*y - sx*nz;
-        let fz = sx*y + cx*nz;
-        const f = 200/(fz+150);
-        return { x: this.x + nx*f, y: this.y + ny*f };
-    }
-    update() {
-        this.rx += this.drx; this.ry += this.dry; this.y += this.vy;
-        if (this.y < -100) this.reset(false);
-    }
-    draw() {
-        const s=this.s;
-        const v=[[-s,-s,-s],[s,-s,-s],[s,s,-s],[-s,s,-s],
-                 [-s,-s,s],[s,-s,s],[s,s,s],[-s,s,s]];
-        const e=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],
-                 [0,4],[1,5],[2,6],[3,7]];
-        const p=v.map(([x,y,z])=>this.proj(x,y,z));
-        ctx.save();
-        ctx.globalAlpha=this.a;
-        ctx.strokeStyle=this.col;
-        ctx.shadowBlur=14; ctx.shadowColor=this.col;
-        ctx.lineWidth=1;
-        e.forEach(([a,b])=>{
-            ctx.beginPath();
-            ctx.moveTo(p[a].x,p[a].y);
-            ctx.lineTo(p[b].x,p[b].y);
-            ctx.stroke();
-        });
-        ctx.restore();
-    }
-}
-
-// ── 5. 3Dプリント積層 (下から積み上がる) ─────────────────────
-class PrintStack {
-    constructor() { this.reset(); }
-    reset() {
-        this.x     = Math.random() * W;
-        this.w     = Math.random() * 80 + 30;
-        this.col   = ['#00ff88','#00ffff','#ff00ff'][Math.floor(Math.random()*3)];
-        this.total = Math.floor(Math.random()*25+10);
-        this.cur   = 0; this.timer=0;
-        this.a     = Math.random()*.35+.15;
-        this.done  = false; this.fade=0;
-    }
-    update() {
-        this.timer++;
-        if (!this.done) {
-            if (this.timer%6===0 && this.cur<this.total) this.cur++;
-            if (this.cur>=this.total) this.done=true;
-        } else {
-            this.fade+=.003;
-            if (this.fade>1) this.reset();
-        }
-    }
-    draw() {
-        const lh=7, d=12;
-        for (let i=0;i<this.cur;i++) {
-            const ly = H - i*lh - lh;
-            const a  = this.a * (this.done ? Math.max(0,1-this.fade):1) * (1-i/this.total*.3);
-            ctx.save();
-            ctx.globalAlpha=a;
-            ctx.strokeStyle=this.col;
-            ctx.shadowBlur=8; ctx.shadowColor=this.col;
-            ctx.lineWidth=.8;
-            ctx.beginPath();
-            ctx.moveTo(this.x,       ly);
-            ctx.lineTo(this.x+this.w/2, ly-d/2);
-            ctx.lineTo(this.x+this.w,   ly);
-            ctx.lineTo(this.x+this.w/2, ly+d/2);
-            ctx.closePath(); ctx.stroke();
-            ctx.restore();
-        }
-    }
-}
-
-// ── 6. 放射状パルスリング (クリック/常時) ─────────────────────
-class PulseRing {
-    constructor(x,y,col) {
-        this.x=x; this.y=y;
-        this.r=0; this.maxR=Math.random()*200+100;
-        this.a=.7;
-        this.col=col||'#00ffff';
-    }
-    update() { this.r+=2.5; this.a-=.012; }
-    done()   { return this.a<=0; }
-    draw()   {
-        ctx.save();
-        ctx.globalAlpha=this.a;
-        ctx.strokeStyle=this.col;
-        ctx.shadowBlur=20; ctx.shadowColor=this.col;
-        ctx.lineWidth=1.5;
-        ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.stroke();
-        ctx.restore();
-    }
-}
-
-// ── 7. グラデーションオーブ (背景ぼんやり光) ─────────────────
-class GlowOrb {
-    constructor() { this.reset(); }
-    reset() {
-        this.x  = Math.random()*W;
-        this.y  = Math.random()*H;
-        this.r  = Math.random()*250+100;
-        this.vx = (Math.random()-.5)*.4;
-        this.vy = (Math.random()-.5)*.4;
-        this.col= ['rgba(0,255,136','rgba(0,255,255','rgba(255,0,255'][Math.floor(Math.random()*3)];
-        this.t  = Math.random()*Math.PI*2;
-    }
-    update() {
-        this.t += .008;
-        this.x += this.vx + Math.sin(this.t)*.3;
-        this.y += this.vy + Math.cos(this.t)*.3;
-        if (this.x<-300||this.x>W+300||this.y<-300||this.y>H+300) this.reset();
-    }
-    draw() {
-        const g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r);
-        g.addColorStop(0, this.col+',.07)');
-        g.addColorStop(1, this.col+',.0)');
-        ctx.save();
-        ctx.fillStyle=g;
-        ctx.beginPath(); ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.fill();
-        ctx.restore();
-    }
-}
-
-// ── インスタンス生成 ───────────────────────────────────────────
-const nodes   = Array.from({length:80},  ()=>new Node());
-const streams = Array.from({length:12},  ()=>{ const s=new DataStream(); s.y=Math.random()*H; return s; });
-const wCubes  = Array.from({length:10},  ()=>new WireCube());
-const stacks  = Array.from({length:12},  ()=>{ const s=new PrintStack(); s.cur=Math.floor(Math.random()*s.total); return s; });
-const orbs    = Array.from({length:5},   ()=>new GlowOrb());
-let   pulses  = [];
-
-// 定期的にパルスリングを生成
-setInterval(()=>{
-    const x=Math.random()*W, y=Math.random()*H;
-    const cols=['#00ff88','#00ffff','#ff00ff','#ffff00'];
-    pulses.push(new PulseRing(x, y, cols[Math.floor(Math.random()*4)]));
-}, 800);
-
-// クリックでパルス
-window.addEventListener('click', e=>{
-    pulses.push(new PulseRing(e.clientX, e.clientY, '#ffff00'));
-});
-
-// ── メインループ ───────────────────────────────────────────────
-function tick() {
-    ctx.clearRect(0,0,W,H);
-
-    // グロウオーブ (一番奥)
-    orbs.forEach(o=>{ o.update(); o.draw(); });
-
-    // データストリーム
-    streams.forEach(s=>{ s.update(); s.draw(); });
-
-    // パーティクルネットワーク
-    drawConnections(nodes);
-    nodes.forEach(n=>{ n.update(); n.draw(); });
-
-    // 3Dプリント積層
-    stacks.forEach(s=>{ s.update(); s.draw(); });
-
-    // ワイヤーキューブ
-    wCubes.forEach(c=>{ c.update(); c.draw(); });
-
-    // パルスリング
-    pulses = pulses.filter(p=>!p.done());
-    pulses.forEach(p=>{ p.update(); p.draw(); });
-
-    requestAnimationFrame(tick);
-}
-tick();
-
-// ── Scroll reveal ───────────────────────────────────────────────
-const io = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-        if (!e.isIntersecting) return;
-        e.target.classList.add('visible');
-        e.target.querySelectorAll('.skill-bar-fill').forEach(b => {
-            setTimeout(() => { b.style.width = b.dataset.width + '%'; }, 400);
-        });
+  function applyNames() {
+    document.querySelectorAll('[data-person]').forEach(el => {
+      const r = el.getAttribute('data-person');
+      if (names[r]) el.textContent = names[r];
     });
-}, { threshold: .12 });
-document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+    document.getElementById('tab-husband').textContent = names.husband;
+    document.getElementById('tab-wife').textContent = names.wife;
+  }
 
-// ── Hamburger ───────────────────────────────────────────────────
-const hamburger = document.getElementById('hamburger');
-const navMenu   = document.getElementById('navMenu');
-hamburger.addEventListener('click', () => navMenu.classList.toggle('open'));
-document.querySelectorAll('.nav-links a').forEach(a =>
-    a.addEventListener('click', () => navMenu.classList.remove('open'))
-);
+  function openSettings() {
+    document.getElementById('input-husband').value = names.husband;
+    document.getElementById('input-wife').value = names.wife;
+    document.getElementById('input-kid1').value = names.kid1;
+    document.getElementById('input-kid2').value = names.kid2;
+    document.getElementById('input-kid3').value = names.kid3;
+    document.getElementById('settings-overlay').classList.add('open');
+  }
 
-// ── Parallax grid ───────────────────────────────────────────────
-window.addEventListener('scroll', () => {
-    document.querySelector('.bg-grid').style.transform =
-        `translateY(${window.scrollY * .28}px)`;
-});
+  function closeSettings() {
+    document.getElementById('settings-overlay').classList.remove('open');
+  }
+
+  function closeSettingsOutside(e) {
+    if (e.target === document.getElementById('settings-overlay')) closeSettings();
+  }
+
+  function saveNames() {
+    names.husband = document.getElementById('input-husband').value.trim() || defaultNames.husband;
+    names.wife    = document.getElementById('input-wife').value.trim()    || defaultNames.wife;
+    names.kid1    = document.getElementById('input-kid1').value.trim()    || defaultNames.kid1;
+    names.kid2    = document.getElementById('input-kid2').value.trim()    || defaultNames.kid2;
+    names.kid3    = document.getElementById('input-kid3').value.trim()    || defaultNames.kid3;
+    try { localStorage.setItem('familyNames', JSON.stringify(names)); } catch(e) {}
+    applyNames();
+    closeSettings();
+  }
+
+  loadNames();
+  initChat();
+  // --- End name management ---
+
+  function switchTab(name, el) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    el.classList.add('active');
+  }
+
+  let departed = false;
+  function pressDeparture() {
+    if (departed) return;
+    departed = true;
+    const now = new Date();
+    const eta = new Date(now.getTime() + 42 * 60000);
+    const etaStr = `${eta.getHours()}:${String(eta.getMinutes()).padStart(2,'0')}`;
+    const nowStr = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+    document.getElementById('departure-btn').classList.add('pressed');
+    document.getElementById('btn-main-label').textContent = '出発済み';
+    document.getElementById('departure-status').textContent = `${nowStr} — ${names.wife}・${names.kid1}・${names.kid2}へ通知`;
+
+    const etaNum = document.getElementById('eta-display');
+    etaNum.textContent = etaStr;
+    etaNum.classList.add('active', 'flash-num');
+    document.getElementById('eta-sub').textContent = '自宅まで約42分';
+
+    document.getElementById('status-dot').classList.add('live');
+    document.getElementById('husband-status-text').textContent = '帰宅中';
+    document.getElementById('husband-updated').textContent = 'たった今更新';
+    document.getElementById('eta-mini').textContent = `${etaStr} 頃に到着予定（約42分）`;
+    document.getElementById('timeline-eta').textContent = etaStr;
+    const etaText = document.getElementById('timeline-eta-text');
+    etaText.innerHTML = `<span data-person="husband">${names.husband}</span> 帰宅予定`;
+    etaText.style.color = 'var(--text)';
+    etaText.style.fontWeight = '700';
+
+    document.getElementById('wife-notify-body').textContent = `${names.husband}が出発しました。${etaStr} 頃に到着予定です`;
+    document.getElementById('hikaru-notify-body').textContent = `パパがもうすぐ帰ってくるよ！${etaStr} 頃の予定だよ`;
+    document.getElementById('yuto-notify-body').textContent = `パパがもうすぐ帰ってくるよ！${etaStr} 頃の予定だよ`;
+    document.getElementById('family-notify-group').style.display = 'block';
+
+    const wifeNum = document.getElementById('wife-eta-display');
+    wifeNum.textContent = etaStr;
+    wifeNum.classList.add('active', 'flash-num');
+    document.getElementById('wife-eta-sub').textContent = '現在地から自宅まで約42分';
+  }
+
+  function offerPickup() {
+    document.getElementById('pickup-resolved').style.display = 'block';
+    const badge = document.getElementById('pickup-status-badge');
+    badge.textContent = `${names.husband}対応`;
+    badge.className = 'badge done';
+    const nb = document.getElementById('notify-child-btn');
+    nb.textContent = `${names.husband}がお迎えします`;
+    nb.disabled = true;
+    alert(`${names.husband}から「${names.kid2}のお迎えに行くよ」の通知を送りました`);
+  }
+
+  function notifyChild() {
+    alert(`${names.kid2}に「もうすぐお迎えに行くよ」を送りました`);
+  }
+
+  // --- Chat ---
+  let chatSender = 'wife';
+  const chatLog = [];
+
+  function initChat() {
+    // sender selector buttons
+    const bar = document.getElementById('chat-who-bar');
+    ['wife','husband','kid1','kid2'].forEach((role, i) => {
+      const b = document.createElement('button');
+      b.className = 'chat-who-btn' + (i === 0 ? ' active' : '');
+      b.setAttribute('data-role', role);
+      b.textContent = names[role];
+      b.onclick = () => {
+        chatSender = role;
+        bar.querySelectorAll('.chat-who-btn').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+      };
+      bar.appendChild(b);
+    });
+
+    // sample messages
+    const samples = [
+      { role: 'wife',    text: '帰りに牛乳買ってきてください🥛' },
+      { role: 'husband', text: '了解！他に何かある？' },
+      { role: 'kid1',    text: 'のどが渇いた、水持ってきて' },
+      { role: 'wife',    text: 'もうすぐ夕飯できるよ〜' },
+    ];
+    samples.forEach(m => appendChat(m.role, m.text, false));
+  }
+
+  function sendChat() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if (!text) return;
+    appendChat(chatSender, text, true);
+    input.value = '';
+  }
+
+  function appendChat(role, text, scroll) {
+    const now = new Date();
+    const t = `${now.getHours()}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const isMine = role === chatSender;
+    const el = document.createElement('div');
+    el.className = `chat-msg ${isMine ? 'mine' : 'theirs'}`;
+    el.innerHTML = `
+      <div class="chat-sender-name">${names[role]}</div>
+      <div class="chat-bubble ${isMine ? '' : 'dark'}">${text}</div>
+      <div class="chat-t">${t}</div>`;
+    document.getElementById('chat-messages').appendChild(el);
+    if (scroll) el.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // --- Pickup request ---
+  function requestPickup(role) {
+    const btn = document.getElementById(`pickup-btn-${role}`);
+    const statusEl = document.getElementById(`pickup-status-${role}`);
+    btn.textContent = '位置情報を取得中…';
+    btn.disabled = true;
+
+    if (!navigator.geolocation) {
+      btn.textContent = '迎えに来て！';
+      btn.disabled = false;
+      statusEl.textContent = '位置情報に対応していません';
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude.toFixed(5);
+        const lng = pos.coords.longitude.toFixed(5);
+        const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+        btn.textContent = '送信済み ✓';
+        statusEl.innerHTML = `現在地を送信しました`;
+        showPickupRequest(role, lat, lng, mapsUrl);
+      },
+      () => {
+        // 位置情報拒否時もデモとして動作
+        btn.textContent = '送信済み ✓';
+        statusEl.textContent = '現在地を送信しました（デモ）';
+        showPickupRequest(role, '35.68143', '139.76711', 'https://maps.google.com/?q=35.68143,139.76711');
+      },
+      { timeout: 8000 }
+    );
+  }
+
+  function showPickupRequest(role, lat, lng, mapsUrl) {
+    const kidName = names[role];
+    const cardId = `pickup-card-${role}`;
+
+    const cardHTML = `
+      <div class="block" id="${cardId}" style="border-left:3px solid var(--text);">
+        <div style="font-family:var(--num);font-size:11px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:var(--alert);margin-bottom:12px;">お迎えリクエスト</div>
+        <div style="font-size:26px;font-weight:600;color:var(--text);margin-bottom:8px;">${kidName}</div>
+        <a href="${mapsUrl}" target="_blank" style="font-family:var(--num);font-size:15px;color:var(--sub);text-decoration:none;display:block;margin-bottom:4px;">
+          現在地を地図で見る →
+        </a>
+        <div style="font-family:var(--num);font-size:13px;color:var(--muted);margin-bottom:20px;">${lat}, ${lng}</div>
+        <div id="eta-card-${role}" style="font-family:var(--num);font-size:14px;color:var(--muted);margin-bottom:16px;"></div>
+        <button class="btn filled" onclick="headingToKid('${role}','${mapsUrl}')">向かいます →</button>
+      </div>`;
+
+    // Dashboard
+    const reqArea = document.getElementById('pickup-requests');
+    const existing = document.getElementById(cardId);
+    if (existing) existing.remove();
+    reqArea.style.display = 'block';
+    reqArea.insertAdjacentHTML('beforeend', cardHTML);
+
+    // Flotan screen — duplicate card
+    const wifeDup = document.getElementById(`pickup-card-wife-${role}`);
+    if (wifeDup) wifeDup.remove();
+    const wifeInsert = document.getElementById('wife-pickup-requests');
+    if (wifeInsert) {
+      wifeInsert.style.display = 'block';
+      const wifeCard = cardHTML.replace(`id="${cardId}"`, `id="pickup-card-wife-${role}"`).replace(`id="eta-card-${role}"`, `id="eta-card-wife-${role}"`).replace(`onclick="headingToKid('${role}','${mapsUrl}')"`, `onclick="headingToKid('${role}','${mapsUrl}')" id="head-btn-wife-${role}"`);
+      wifeInsert.insertAdjacentHTML('beforeend', wifeCard);
+    }
+  }
+
+  function headingToKid(role, mapsUrl) {
+    const eta = Math.floor(Math.random() * 10) + 12; // 12〜21分
+    const now = new Date();
+    const arr = new Date(now.getTime() + eta * 60000);
+    const arrStr = `${arr.getHours()}:${String(arr.getMinutes()).padStart(2,'0')}`;
+
+    [`eta-card-${role}`, `eta-card-wife-${role}`].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = `<span style="font-size:40px;font-weight:800;letter-spacing:-2px;color:var(--text);">${arrStr}</span><span style="display:block;margin-top:4px;">約${eta}分後に到着予定</span>`;
+    });
+
+    // disable heading buttons
+    document.querySelectorAll(`[id^="head-btn"]`).forEach(b => { b.textContent = `向かっています（${arrStr}着予定）`; b.disabled = true; });
+
+    window.open(mapsUrl, '_blank');
+    alert(`${names[role]}に「約${eta}分後に到着予定」を送りました`);
+  }
+
+  let recognition = null, voiceActive = false, voiceInitialized = false;
+
+  function setWaveMuted(m) {
+    document.querySelectorAll('.wave-bar').forEach(b => b.classList.toggle('muted', m));
+  }
+
+  function initVoice() {
+    document.getElementById('voice-start-screen').style.display = 'none';
+    document.getElementById('voice-active-screen').style.display = 'block';
+    voiceInitialized = true;
+    startVoice();
+  }
+
+  function startVoice() {
+    if (!voiceInitialized) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      document.getElementById('voice-label').textContent = '音声非対応ブラウザ';
+      setWaveMuted(true); return;
+    }
+    if (recognition) { try { recognition.stop(); } catch(e) {} }
+    recognition = new SR();
+    recognition.lang = 'ja-JP';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.onstart = () => {
+      voiceActive = true; setWaveMuted(false);
+      document.getElementById('voice-label').textContent = '聞いています';
+      document.getElementById('voice-toggle-btn').textContent = 'マイクをオフにする';
+    };
+    recognition.onresult = (e) => {
+      let t = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
+      document.getElementById('voice-status').textContent = `「${t}」`;
+      if (t.includes('出発') || t.includes('しゅっぱつ')) {
+        voiceActive = false; if (recognition) recognition.stop();
+        pressDeparture();
+      }
+    };
+    recognition.onerror = (e) => {
+      if (e.error === 'not-allowed') {
+        document.getElementById('voice-label').textContent = 'マイクの許可が必要です';
+        setWaveMuted(true); voiceActive = false;
+      }
+    };
+    recognition.onend = () => { if (voiceActive) setTimeout(() => startVoice(), 300); };
+    try { recognition.start(); } catch(e) { setTimeout(() => startVoice(), 500); }
+  }
+
+  function stopVoice() {
+    voiceActive = false;
+    if (recognition) { try { recognition.stop(); } catch(e) {} }
+    setWaveMuted(true);
+    document.getElementById('voice-label').textContent = 'マイクがオフ';
+    document.getElementById('voice-status').textContent = '';
+    document.getElementById('voice-toggle-btn').textContent = 'マイクをオンにする';
+  }
+
+  function toggleVoice() {
+    if (departed) return;
+    if (voiceActive) { stopVoice(); } else { voiceActive = true; startVoice(); }
+  }
+
+  function toggleCheck(boxId, titleId) {
+    const box = document.getElementById(boxId);
+    const title = document.getElementById(titleId);
+    if (box.classList.contains('checked')) {
+      box.classList.remove('checked'); box.textContent = ''; title.classList.remove('done');
+    } else {
+      box.classList.add('checked'); box.textContent = '✓'; title.classList.add('done');
+    }
+  }
 </script>
+
+<div class="settings-overlay" id="settings-overlay" onclick="closeSettingsOutside(event)">
+  <div class="settings-sheet">
+    <div class="settings-header">
+      <div class="settings-title">Family Names</div>
+      <button class="settings-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="settings-field">
+      <label>パパ / Dad</label>
+      <input class="settings-input" id="input-husband" type="text">
+    </div>
+    <div class="settings-field">
+      <label>ママ / Mom</label>
+      <input class="settings-input" id="input-wife" type="text">
+    </div>
+    <div class="settings-field">
+      <label>子ども 1</label>
+      <input class="settings-input" id="input-kid1" type="text">
+    </div>
+    <div class="settings-field">
+      <label>子ども 2</label>
+      <input class="settings-input" id="input-kid2" type="text">
+    </div>
+    <div class="settings-field">
+      <label>末っ子</label>
+      <input class="settings-input" id="input-kid3" type="text">
+    </div>
+    <button class="btn filled" onclick="saveNames()">保存する</button>
+  </div>
+</div>
 </body>
 </html>
